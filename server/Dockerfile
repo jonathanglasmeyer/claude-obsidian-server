@@ -20,7 +20,7 @@ RUN npm ci --only=production
 COPY . .
 
 # Create directories for SSH keys and vault
-RUN mkdir -p /home/claude/.ssh && \
+RUN mkdir -p /home/claude/.ssh /srv/claude-jobs/obsidian-vault && \
     chown -R claude:claude /home/claude/.ssh && \
     chmod 700 /home/claude/.ssh
 
