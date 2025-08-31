@@ -1,0 +1,29 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "ai": "^5.0.28",
+    "ai-sdk-provider-claude-code": "^1.1.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "redis": "^5.8.2",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "nodemon": "^3.1.10",
+    "typescript": "^5.9.2"
+  }
+}

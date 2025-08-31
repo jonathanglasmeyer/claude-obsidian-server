@@ -1,0 +1,339 @@
+# Implementation Plan - Share to Obsidian Vault
+
+## Phase 0: Basic PoC Validation (30 minutes)
+
+### Step 0.1: Claude Code CLI Test on Hetzner
+SSH into server and test Claude Code setup:
+```bash
+# SSH to Hetzner
+ssh hetzner
+
+# Install Claude Code CLI if not present
+curl -sSL https://claude.ai/install.sh | bash
+# or: npm install -g @anthropic-ai/claude-code
+
+# Export your OAuth token (temporarily)
+export CLAUDE_CODE_OAUTH_TOKEN="your-token-here"
+
+# Basic test - does CLI work?
+claude --version
+claude auth status
+
+# Test a simple command
+echo "Hello from Hetzner server" | claude ask "What server am I running on?"
+
+# Test code functionality with a dummy folder
+mkdir /tmp/test-claude && cd /tmp/test-claude
+echo "console.log('test');" > test.js
+claude code --help
+# Try: claude code "add a comment to this file"
+```
+
+**Expected Result:** CLI works, responds, can read/write files
+
+### Step 0.2: Git Access Test
+```bash
+# Test git access to your vault repo (read-only first)
+git clone https://github.com/your-user/obsidian-vault.git /tmp/test-vault
+cd /tmp/test-vault
+ls -la
+
+# Clean up
+rm -rf /tmp/test-claude /tmp/test-vault
+```
+
+**Success Criteria:** 
+- ✅ Claude CLI installed and authenticated
+- ✅ Can process text and files
+- ✅ Can access vault repository
+- ❌ **STOP HERE if anything fails** - fix before proceeding
+
+---
+
+## Prerequisites Check
+- [ ] Verify `CLAUDE_CODE_OAUTH_TOKEN` is available
+- [ ] Confirm access to Obsidian vault repository  
+- [ ] Check Node.js ≥18 and npm/pnpm installed
+- [ ] Verify Android development environment setup
+
+## Phase 1: Security Setup - Claude User & Git Access (✅ COMPLETE)
+
+**Production Environment Setup:**
+- Dedicated `claude` user with restricted permissions
+- SSH key-based GitHub vault access with deploy keys
+- Isolated workspace at `/srv/claude-jobs/obsidian-vault`
+- Claude Code CLI installed and authenticated
+
+## Phase 2: Bridge Server Foundation (✅ COMPLETE)
+
+**Docker-based Development Workflow:**
+- Local development with SSH tunnel to production
+- Docker Compose setup (Node.js + Redis)
+- Express server with health check, session management, SSE streaming
+- Deployed and running on Hetzner with localhost:3001 tunnel access
+
+## Phase 3: AI SDK Integration with Claude Code (Day 1-2)
+
+**Technology Decision: Using `ai-sdk-provider-claude-code`**
+- Wraps official Claude Code TypeScript SDK
+- Full file operations support (Read, Write, Edit, Bash tools)
+- Native working directory (`cwd`) support for vault context
+- Built-in streaming compatible with Vercel AI SDK
+- Perfect for React Native chat UI integration
+- No loss of functionality vs direct Claude Code SDK
+
+### Step 3.1: AI SDK Provider Setup
+- Install `ai` and `ai-sdk-provider-claude-code` packages
+- Configure Claude provider with vault working directory
+- Setup tool permissions (Read, Write, Edit, Git operations)
+
+### Step 3.2: Enhanced Session Endpoints
+- Update session creation to use AI SDK streaming
+- Implement vault-context Claude provider
+- Store session state with AI SDK conversation management
+
+### Step 3.3: Real-time Streaming Integration
+- Replace manual SSE with AI SDK streamText()
+- Stream Claude responses directly to mobile app
+- Handle file operations and git commits in real-time
+
+### Step 3.4: Vault Operations Handler
+- Configure allowed tools for secure vault access
+- Implement content processing workflows
+- Add git automation for vault updates
+
+### Step 3.5: Mobile-Ready API
+- Ensure compatibility with React Native useChat hook
+- Add session resumption for multi-turn conversations
+- Implement proper error handling and timeouts
+
+## Phase 4: Android App (Day 2-3)
+
+**Simplified by AI SDK Integration:**
+- Vercel AI SDK provides React Native `useChat` hook
+- Built-in streaming message handling
+- Native conversation state management
+- Direct compatibility with Phase 3 AI SDK provider
+
+### Step 4.1: React Native Setup
+```bash
+npx react-native init ObsidianShare --skip-install
+cd ObsidianShare
+npm install
+```
+
+### Step 3.2: Share Intent Configuration
+- Edit `android/app/src/main/AndroidManifest.xml`:
+  - Add share intent filter for text/plain
+  - Configure activity launch mode
+- Test share target appears in Android share menu
+
+### Step 3.3: Core Dependencies
+```bash
+npm install react-native-share-intent
+npm install react-native-sse
+npm install @react-navigation/native @react-navigation/stack
+```
+
+### Step 3.4: Share Handler Service
+- Create `ShareHandlerService.js`
+- Extract shared content from intent
+- Queue if app not running
+
+### Step 3.5: API Client
+- Create `BridgeAPI.js` with fetch wrapper
+- Implement session creation
+- Setup SSE connection handler
+
+### Step 3.6: Main UI Screen
+- Create `ShareScreen.js` with:
+  - Shared content preview
+  - Loading spinner during processing
+  - Claude response streaming display
+  - Confirm/Cancel buttons
+
+### Step 3.7: Streaming Components
+- Create `StreamingText.js` for live token display
+- Create `ProposalView.js` for file preview
+- Handle markdown rendering
+
+## Phase 5: Integration Testing (Day 3)
+
+### Step 4.1: Local Testing Setup
+- Clone Obsidian vault locally
+- Configure server with vault path
+- Start Redis and server
+
+### Step 4.2: End-to-End Flow Test
+1. Share URL from browser to app
+2. Verify session creation
+3. Check Claude proposal stream
+4. Test confirmation flow
+5. Verify git commit/push
+
+### Step 4.3: Content Type Testing
+- Test article URL processing
+- Test plain text snippets
+- Test Twitter/X post URLs
+- Verify proper vault routing
+
+### Step 4.4: Error Scenarios
+- Test network disconnection
+- Test Claude timeout
+- Test invalid content
+- Test git push failures
+
+## Phase 5: Deployment & Polish (Day 4)
+
+### Step 5.1: Security Setup - Claude User & Git Access
+Setup dedicated user for Claude operations:
+```bash
+# Create dedicated user
+sudo useradd -m -s /bin/bash claude
+sudo mkdir -p /srv/claude-jobs
+sudo chown claude:claude /srv/claude-jobs
+sudo chmod 700 /srv/claude-jobs
+
+# Generate repo-specific SSH key
+sudo -u claude ssh-keygen -t ed25519 -f /home/claude/.ssh/id_ed25519_repo -N ''
+
+# Setup SSH config for repo access
+sudo -u claude tee /home/claude/.ssh/config << EOF
+Host github.com
+  IdentityFile ~/.ssh/id_ed25519_repo
+  IdentitiesOnly yes
+  StrictHostKeyChecking yes
+EOF
+
+# Pin GitHub's host keys
+sudo -u claude ssh-keyscan github.com >> /home/claude/.ssh/known_hosts
+
+# Git configuration for the claude user
+sudo -u claude git config --global user.email "claude@yourdomain.com"
+sudo -u claude git config --global user.name "Claude Bot"
+sudo -u claude git config --global safe.directory /srv/claude-jobs/*
+```
+
+### Step 5.2: Vault Repository Setup
+```bash
+# Clone Obsidian vault with repo-specific key
+cd /srv/claude-jobs
+sudo -u claude GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519_repo -o IdentitiesOnly=yes' git clone git@github.com:owner/obsidian-vault.git
+
+# Set permissions
+sudo chmod -R 700 /srv/claude-jobs/obsidian-vault
+```
+
+**Manual Step:** Add `/home/claude/.ssh/id_ed25519_repo.pub` as Deploy Key in GitHub repo settings with write permissions.
+
+### Step 5.3: Server Deployment & Caddy Integration
+- Deploy to Hetzner server via SSH:
+  ```bash
+  # Copy project files to server
+  scp -r . user@hetzner-server:~/Projects/quietloop-claude-obsidian-server/
+  
+  # SSH into server and build
+  ssh user@hetzner-server
+  cd ~/Projects/quietloop-claude-obsidian-server
+  docker-compose up -d
+  ```
+- Add obsidian service config to ../quietloop-cashflow/docker/caddy/Caddyfile:
+  ```
+  obsidian.yourdomain.com {
+      reverse_proxy localhost:3001
+  }
+  ```
+- Restart Caddy container in cashflow project
+- Test obsidian.domain.com routing through Cloudflare
+
+### Step 5.4: Android App Build
+```bash
+cd android
+./gradlew assembleRelease
+```
+- Generate signed APK
+- Install on Pixel 9
+- Test share from various apps
+
+### Step 5.5: Monitoring Setup
+- Add basic logging to server
+- Monitor Redis memory usage
+- Track Claude API usage
+
+### Step 5.6: Documentation
+- Update README with setup instructions
+- Document environment variables
+- Add troubleshooting guide
+
+## Testing Checklist
+
+### Server Tests
+- [ ] Health check endpoint works
+- [ ] Session creation returns ID
+- [ ] SSE stream connects
+- [ ] Claude process spawns correctly
+- [ ] Proposals parsed accurately
+- [ ] Git operations complete
+
+### App Tests
+- [ ] Share intent received
+- [ ] Content displayed correctly
+- [ ] Stream updates live
+- [ ] Confirmation works
+- [ ] Error states handled
+
+### Integration Tests
+- [ ] Full flow: share → process → confirm → git
+- [ ] Multiple content types work
+- [ ] Session timeout handled
+- [ ] Concurrent sessions supported
+
+## Environment Variables
+
+### Server (.env)
+```
+CLAUDE_CODE_OAUTH_TOKEN=<token>
+OBSIDIAN_VAULT_PATH=/srv/claude-jobs/obsidian-vault
+REDIS_URL=redis://localhost:6379
+PORT=3000
+NODE_ENV=production
+CLAUDE_USER=claude
+```
+
+### App (config.js)
+```javascript
+export const API_BASE_URL = 'https://obsidian.yourdomain.com';
+```
+
+## Debugging Commands
+
+```bash
+# Test Claude CLI directly
+CLAUDE_CODE_OAUTH_TOKEN=xxx claude code --working-dir /vault
+
+# Monitor server logs
+journalctl -u obsidian-bridge -f
+
+# Check Redis sessions
+redis-cli KEYS "session:*"
+
+# Test SSE endpoint
+curl -N http://localhost:3000/api/session/test/stream
+
+# Build APK debug version
+cd android && ./gradlew assembleDebug
+```
+
+## Success Criteria
+1. ✅ Can share URL from any Android app
+2. ✅ Claude proposes correct vault location
+3. ✅ User can confirm/modify proposal
+4. ✅ Changes committed and pushed to git
+5. ✅ Full flow completes in <30 seconds
+
+## Notes for Sonnet
+- Start with Phase 1-2 (server) first - get CLI integration working
+- Use console.log liberally during development
+- Test with simple text before complex URLs
+- Keep mobile UI minimal - focus on functionality
+- Handle Claude errors gracefully - show raw output if parsing fails

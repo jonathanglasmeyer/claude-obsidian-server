@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: obsidian-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - obsidian-net
+
+  server:
+    build: 
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: obsidian-server
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+    env_file:
+      - ./server/.env
+    depends_on:
+      - redis
+    volumes:
+      - /srv/claude-jobs:/srv/claude-jobs:ro
+      - /home/claude/.ssh:/home/claude/.ssh:ro
+    networks:
+      - obsidian-net
+
+volumes:
+  redis_data:
+
+networks:
+  obsidian-net:
+    driver: bridge
