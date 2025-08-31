@@ -1,4 +1,4 @@
-import { claudeCode } from 'ai-sdk-provider-claude-code';
+const { claudeCode } = require('ai-sdk-provider-claude-code');
 
 /**
  * Configure Claude provider with vault-specific settings
