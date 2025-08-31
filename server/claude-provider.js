@@ -10,14 +10,9 @@ function createClaudeProvider() {
   
   console.log(`🏛️ Configuring Claude provider with vault path: ${vaultPath}`);
   
-  // Check if vault is properly mounted (should contain .git or CLAUDE.md)
-  const isVaultMounted = fs.existsSync(vaultPath) && (
-    fs.existsSync(`${vaultPath}/.git`) || 
-    fs.existsSync(`${vaultPath}/CLAUDE.md`)
-  );
-  
-  const workingDir = isVaultMounted ? vaultPath : '/app';
-  console.log(`📁 Vault mounted: ${isVaultMounted}, using working directory: ${workingDir}`);
+  // For now, always use /app until we can debug the mounting issue
+  const workingDir = '/app';
+  console.log(`📁 Using working directory: ${workingDir} (vault debugging mode)`);
   
   return claudeCode('sonnet', {
     // Working directory set to vault path for file operations  
