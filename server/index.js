@@ -9,8 +9,16 @@ import SessionManager from './session-manager.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 const sessionStore = new SessionStore();
-const aiService = new AIService();
+let aiService = null;  // Initialize lazily
 const sessionManager = new SessionManager();
+
+function getAIService() {
+  if (!aiService) {
+    console.log('🔧 Initializing AI Service at runtime...');
+    aiService = new AIService();
+  }
+  return aiService;
+}
 
 // Middleware
 app.use(cors({
@@ -267,7 +275,7 @@ app.post('/api/session/:id/confirm', async (req, res) => {
 
     // Execute the AI proposal
     try {
-      const result = await aiService.executeProposal(session, action);
+      const result = await getAIService().executeProposal(session, action);
       
       await sessionStore.updateSession(sessionId, {
         status: result.success ? 'executed' : 'failed',
