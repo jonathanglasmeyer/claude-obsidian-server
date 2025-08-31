@@ -3,19 +3,21 @@
 ## Project Overview
 Mobile React Native app that acts as a share target to intelligently process content into an Obsidian vault using Claude Code (Max plan, no API key required). The app receives shared URLs/text, sends them to a bridge server that runs Claude Code CLI sessions, proposes vault organization, and executes git operations upon user confirmation.
 
+**Status: Phase 3 Complete** - Bridge server operational with AI SDK integration and vault access.
+
 ## Architecture
 
 **Components:**
-- **Mobile App (RN)** - Share target with streaming UI
-- **Bridge Server (Node.js)** - Manages Claude Code CLI sessions via child processes
-- **Session Store (Redis)** - Temporary session state
-- **Obsidian Vault (Git)** - Target repository with existing CLAUDE.md rules
+- **Mobile App (RN)** - Share target with streaming UI *(Phase 4)*
+- **Bridge Server (Node.js)** - AI SDK integration with Claude Code provider ✅
+- **Session Store (Redis)** - Temporary session state ✅  
+- **Obsidian Vault (Git)** - Target repository with existing CLAUDE.md rules ✅
 
 **Flow:**
 1. Share URL/text → RN app → Bridge server
-2. Server spawns `claude code` CLI with vault context
-3. Claude proposes file location/format via SSE stream
-4. User confirms/modifies → Claude executes + commits to git
+2. Server uses AI SDK with Claude Code provider (vault context)
+3. Claude proposes file location/format via SSE stream ✅
+4. User confirms/modifies → Claude executes + commits to git *(ready to test)*
 
 ## Bridge Server
 
@@ -79,10 +81,13 @@ Claude Code CLI will use the target vault's existing CLAUDE.md rules to determin
 - **Security:** Isolated `claude` user, SSH keys, container isolation
 
 ## AI SDK Integration (Phase 3 ✅)
-- **Package:** `ai-sdk-provider-claude-code` + `ai` SDK
-- **Key Pattern:** `claudeCode('sonnet', {allowedTools: [...], cwd: path})`
-- **Architecture:** Redis + In-memory hybrid (persistent sessions + live streams)
-- **Streaming:** Server-Sent Events with token-by-token real-time updates
+- **Package:** `ai-sdk-provider-claude-code` + `ai` SDK ✅
+- **Key Pattern:** `claudeCode('sonnet', {allowedTools: [...], cwd: path})` ✅
+- **Architecture:** Redis + In-memory hybrid (persistent sessions + live streams) ✅
+- **Streaming:** Server-Sent Events with token-by-token real-time updates ✅
+- **Lazy Initialization:** Prevents Docker startup crashes, initializes on first API call ✅
+- **Vault Integration:** Claude Code operates directly in `/srv/claude-jobs/obsidian-vault` ✅
+- **SSH Tunnel Access:** `localhost:3001` → Hetzner production server ✅
 
 ## Deployment
 ```bash
@@ -102,7 +107,10 @@ ssh -L 3001:localhost:3001 hetzner -N
 ```
 
 ## Current Status
-- ✅ AI SDK streaming operational (localhost:3002)  
+- ✅ AI SDK streaming operational (localhost:3001) 
 - ✅ Multi-turn conversations + session management
-- ✅ Production deployment ready
+- ✅ Production deployment active on Hetzner
+- ✅ Vault mounting and permissions resolved
+- ✅ Claude Code reads actual CLAUDE.md rules and vault structure
+- ✅ Real-time streaming validated via SSH tunnel
 - 🚀 **Next:** Phase 4 Android App
