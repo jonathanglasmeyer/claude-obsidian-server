@@ -32,7 +32,7 @@ RUN curl -sSL https://claude.ai/install.sh | bash
 USER root
 RUN ln -s /home/claude/.local/bin/claude /usr/local/bin/claude
 
-# Switch back to claude user for runtime
+# Switch to claude user for runtime
 USER claude
 
 EXPOSE 3001
