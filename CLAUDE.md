@@ -106,6 +106,91 @@ ssh hetzner "cd ~/obsidian-bridge-server && docker compose up -d --build"
 ssh -L 3001:localhost:3001 hetzner -N  
 ```
 
+## SSH Tunnel Validation Workflow
+
+### Current Testing Pattern
+
+**Setup SSH Tunnel:**
+```bash
+ssh -L 3001:localhost:3001 hetzner -N
+```
+*Forwards local port 3001 to Hetzner server port 3001*
+
+**Health Check:**
+```bash
+curl -s http://localhost:3001/health
+# Expected: {"status":"healthy","timestamp":"...","version":"1.0.0","redis":true}
+```
+
+**Test Session Creation:**
+```bash
+curl -X POST http://localhost:3001/api/session \
+  -H "Content-Type: application/json" \
+  -d '{"content": "Test content for vault organization", "type": "text"}' \
+  -s | jq -r '.sessionId'
+```
+
+**Stream AI Processing:**
+```bash
+curl -N http://localhost:3001/api/session/[SESSION_ID]/stream
+```
+
+**Expected Streaming Output:**
+```
+data: {"type":"connected","sessionId":"...","timestamp":"..."}
+data: {"type":"chunk","content":"I'll analyze this content...","timestamp":"..."}
+data: {"type":"chunk","content":"Based on your vault structure...","timestamp":"..."}
+data: {"type":"completed","timestamp":"..."}
+```
+
+### Validation Results
+
+**Lazy Initialization Logs:**
+```
+🔧 Initializing AI Service at runtime...
+🏛️ Configuring Claude provider with vault path: /srv/claude-jobs/obsidian-vault
+📁 Vault mounted: true, using working directory: /srv/claude-jobs/obsidian-vault
+```
+
+**Vault Integration Confirmed:**
+- Claude reads actual CLAUDE.md rules (8KB)
+- Recognizes vault categories (Literature, AI & Tools, Articles, etc.)
+- Follows vault content organization principles
+- Proposes appropriate file locations and formats
+
+### Key Observations
+
+**Performance:** ~3-5 second response time for content analysis
+**Streaming:** Real-time token-by-token delivery via SSE
+**Intelligence:** Claude applies your vault's organizational rules and suggests appropriate categorization
+**Safety:** Claude requests confirmation before file operations (follows CLAUDE.md principles)
+
+### Troubleshooting
+
+**SSH Tunnel Issues:**
+```bash
+# Check if tunnel is active
+lsof -i :3001
+
+# Kill existing tunnel 
+pkill -f "ssh.*3001:localhost:3001"
+
+# Restart tunnel with verbose output
+ssh -v -L 3001:localhost:3001 hetzner -N
+```
+
+**Server Status Check:**
+```bash
+# Check server health on Hetzner
+ssh hetzner 'cd ~/obsidian-bridge-server && docker compose ps'
+ssh hetzner 'cd ~/obsidian-bridge-server && docker compose logs server --tail=10'
+```
+
+**Common Issues:**
+- `curl: (7) Failed to connect` → SSH tunnel not active
+- `{"status":"unhealthy"}` → Redis connection issues  
+- Stream timeouts → Check vault permissions or lazy initialization logs
+
 ## Current Status
 - ✅ AI SDK streaming operational (localhost:3001) 
 - ✅ Multi-turn conversations + session management
@@ -113,4 +198,51 @@ ssh -L 3001:localhost:3001 hetzner -N
 - ✅ Vault mounting and permissions resolved
 - ✅ Claude Code reads actual CLAUDE.md rules and vault structure
 - ✅ Real-time streaming validated via SSH tunnel
+- ✅ Vault intelligence confirmed (categories, rules, organization)
 - 🚀 **Next:** Phase 4 Android App
+
+## API Endpoints for Mobile Integration
+
+**Base URL:** `http://localhost:3001` (via SSH tunnel)
+
+### Core Endpoints
+
+**Health Check:** `GET /health`
+```json
+{"status":"healthy","timestamp":"2025-08-31T14:07:06.370Z","version":"1.0.0","redis":true}
+```
+
+**Create Session:** `POST /api/session`
+```json
+{
+  "content": "URL or text to organize",
+  "type": "url|text"
+}
+// Returns: {"sessionId": "uuid", "status": "created"}
+```
+
+**Stream Processing:** `GET /api/session/:id/stream`
+- Server-Sent Events stream
+- Real-time Claude responses
+- Compatible with Vercel AI SDK `useChat`
+
+**Continue Conversation:** `POST /api/session/:id/message`  
+```json
+{
+  "message": "User response or modification"
+}
+```
+
+**Execute Proposal:** `POST /api/session/:id/confirm`
+```json
+{
+  "action": "confirm|modify|cancel"
+}
+```
+
+### Integration Notes for Phase 4
+
+**React Native:** Use `@vercel/ai` `useChat` hook with SSE endpoint
+**Authentication:** OAuth token handled server-side only
+**Error Handling:** Built-in timeout and retry mechanisms
+**Session Management:** 5-minute timeout, Redis persistence
