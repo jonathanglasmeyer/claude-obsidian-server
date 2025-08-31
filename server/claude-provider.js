@@ -16,7 +16,7 @@ function createClaudeProvider() {
     fs.existsSync(`${vaultPath}/CLAUDE.md`)
   );
   
-  const workingDir = isVaultMounted ? vaultPath : process.cwd();
+  const workingDir = isVaultMounted ? vaultPath : '/app';
   console.log(`📁 Vault mounted: ${isVaultMounted}, using working directory: ${workingDir}`);
   
   return claudeCode('sonnet', {
