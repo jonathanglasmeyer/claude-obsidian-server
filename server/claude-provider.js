@@ -10,8 +10,8 @@ function createClaudeProvider() {
   console.log(`🏛️ Configuring Claude provider with vault path: ${vaultPath}`);
   
   return claudeCode('sonnet', {
-    // Working directory set to vault path for file operations (use current dir for now)
-    cwd: process.cwd(),
+    // Working directory set to vault path for file operations  
+    cwd: vaultPath,
     
     // Tool permissions for secure vault operations
     allowedTools: [
