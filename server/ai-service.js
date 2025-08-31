@@ -3,7 +3,15 @@ import { createClaudeProvider } from './claude-provider.js';
 
 class AIService {
   constructor() {
-    this.claude = createClaudeProvider();
+    this.claude = null;  // Initialize lazily when needed
+  }
+
+  getClaudeProvider() {
+    if (!this.claude) {
+      console.log('🔧 Initializing Claude provider at runtime...');
+      this.claude = createClaudeProvider();
+    }
+    return this.claude;
   }
 
   /**
@@ -71,7 +79,7 @@ Always explain your reasoning and ask for confirmation before making changes.`,
 
       // Create streaming response using AI SDK
       const result = await streamText({
-        model: this.claude,
+        model: this.getClaudeProvider(),
         messages: messages,
         temperature: 0.3, // Lower temperature for more consistent file organization
         maxTokens: 4000,
