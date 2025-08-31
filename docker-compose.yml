@@ -29,7 +29,7 @@ services:
     depends_on:
       - redis
     volumes:
-      - /srv/claude-jobs:/srv/claude-jobs:ro
+      - /srv/claude-jobs:/srv/claude-jobs:rw
       - /home/claude/.ssh:/home/claude/.ssh:ro
     networks:
       - obsidian-net
