@@ -1,4 +1,4 @@
-const { claudeCode } = require('ai-sdk-provider-claude-code');
+import { claudeCode } from 'ai-sdk-provider-claude-code';
 
 /**
  * Configure Claude provider with vault-specific settings
@@ -32,6 +32,4 @@ function createClaudeProvider() {
   });
 }
 
-module.exports = {
-  createClaudeProvider
-};
+export { createClaudeProvider };

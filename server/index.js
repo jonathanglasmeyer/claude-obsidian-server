@@ -1,9 +1,10 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const SessionStore = require('./session-store');
-const AIService = require('./ai-service');
-const SessionManager = require('./session-manager');
+import dotenv from 'dotenv';
+dotenv.config();
+import express from 'express';
+import cors from 'cors';
+import SessionStore from './session-store.js';
+import AIService from './ai-service.js';
+import SessionManager from './session-manager.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;

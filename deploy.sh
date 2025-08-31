@@ -6,7 +6,7 @@ echo "🚀 Deploying Claude Obsidian Bridge Server to Hetzner..."
 
 # Configuration
 REMOTE_HOST="hetzner"
-REMOTE_PATH="~/Projects/quietloop-claude-obsidian-server"
+REMOTE_PATH="~/obsidian-bridge-server"
 PROJECT_NAME="quietloop-claude-obsidian-server"
 
 # Function to run commands on remote host

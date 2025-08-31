@@ -230,11 +230,11 @@ sudo chmod -R 700 /srv/claude-jobs/obsidian-vault
 - Deploy to Hetzner server via SSH:
   ```bash
   # Copy project files to server
-  scp -r . user@hetzner-server:~/Projects/quietloop-claude-obsidian-server/
+  scp -r . user@hetzner-server:~/obsidian-bridge-server/
   
   # SSH into server and build
   ssh user@hetzner-server
-  cd ~/Projects/quietloop-claude-obsidian-server
+  cd ~/obsidian-bridge-server
   docker-compose up -d
   ```
 - Add obsidian service config to ../quietloop-cashflow/docker/caddy/Caddyfile:

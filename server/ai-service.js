@@ -1,5 +1,5 @@
-const { streamText } = require('ai');
-const { createClaudeProvider } = require('./claude-provider');
+import { streamText } from 'ai';
+import { createClaudeProvider } from './claude-provider.js';
 
 class AIService {
   constructor() {
@@ -150,4 +150,4 @@ Consider the existing vault structure and follow any CLAUDE.md rules you find.`;
   }
 }
 
-module.exports = AIService;
+export default AIService;

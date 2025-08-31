@@ -15,7 +15,7 @@ class SessionManager {
     
     try {
       // Import AI service here to avoid circular dependencies
-      const AIService = require('./ai-service');
+      const { default: AIService } = await import('./ai-service.js');
       const aiService = new AIService();
       
       // Create the AI streaming session with conversation context
@@ -112,4 +112,4 @@ class SessionManager {
   }
 }
 
-module.exports = SessionManager;
+export default SessionManager;

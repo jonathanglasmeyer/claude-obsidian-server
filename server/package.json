@@ -11,6 +11,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "type": "module",
   "dependencies": {
     "ai": "^5.0.28",
     "ai-sdk-provider-claude-code": "^1.1.2",

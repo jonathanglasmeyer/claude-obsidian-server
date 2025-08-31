@@ -1,5 +1,5 @@
-const { createClient } = require('redis');
-const { v4: uuidv4 } = require('uuid');
+import { createClient } from 'redis';
+import { v4 as uuidv4 } from 'uuid';
 
 class SessionStore {
   constructor() {
@@ -160,4 +160,4 @@ class SessionStore {
   }
 }
 
-module.exports = SessionStore;
+export default SessionStore;
