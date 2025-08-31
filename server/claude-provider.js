@@ -10,9 +10,14 @@ function createClaudeProvider() {
   
   console.log(`🏛️ Configuring Claude provider with vault path: ${vaultPath}`);
   
-  // Use current directory as fallback if vault path doesn't exist yet
-  const workingDir = fs.existsSync(vaultPath) ? vaultPath : process.cwd();
-  console.log(`📁 Using working directory: ${workingDir}`);
+  // Check if vault is properly mounted (should contain .git or CLAUDE.md)
+  const isVaultMounted = fs.existsSync(vaultPath) && (
+    fs.existsSync(`${vaultPath}/.git`) || 
+    fs.existsSync(`${vaultPath}/CLAUDE.md`)
+  );
+  
+  const workingDir = isVaultMounted ? vaultPath : process.cwd();
+  console.log(`📁 Vault mounted: ${isVaultMounted}, using working directory: ${workingDir}`);
   
   return claudeCode('sonnet', {
     // Working directory set to vault path for file operations  
