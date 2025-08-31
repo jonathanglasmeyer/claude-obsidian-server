@@ -37,6 +37,8 @@ function createClaudeProvider() {
       'Glob',          // File pattern matching
       'Grep',          // Content searching
       'Bash',          // Bash commands (will be restricted by system)
+      'WebFetch',      // Web content fetching for URLs
+      'WebSearch',     // Web search as fallback
     ]
     
     // Note: Only using allowedTools since disallowedTools conflicts and causes hangs

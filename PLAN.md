@@ -346,93 +346,49 @@ cd android && ./gradlew assembleDebug
 4. ✅ Changes committed and pushed to git
 5. ✅ Full flow completes in <30 seconds
 
-## Phase 3.6: Direct AI SDK v5 Endpoint Implementation ⚠️
+## Phase 3.6: Direct AI SDK v5 Endpoint Implementation ✅ **COMPLETE**
 
 **Objective:** Implement vanilla AI SDK v5 pipeline: `useChat()` → `/api/ai-chat` → `streamText()` with no conversion layers.
 
+**Key Achievement:** **Fixed the core streaming issue** - `useChat` was receiving plain text instead of UI Message chunks.
+
 **What We Accomplished:**
-1. ✅ **Deployed `/api/ai-chat` endpoint** to production with direct Claude provider integration
+1. ✅ **Deployed `/api/ai-chat` endpoint** with direct Claude provider integration
 2. ✅ **Fixed deployment script** to use modern `docker compose` commands  
-3. ✅ **Implemented vanilla AI SDK v5 streaming** - proper `streamText()` response format
-4. ✅ **Updated web prototype** to use correct `useChat()` API (`handleSubmit`, `handleInputChange`)
+3. ✅ **CRITICAL FIX**: Changed from `toTextStreamResponse()` to `toUIMessageStreamResponse()`
+4. ✅ **Updated web prototype** to use native AI SDK v5 streaming without timeouts
 5. ✅ **Eliminated conversion complexity** - direct `/api/ai-chat` passthrough in web prototype
-6. ✅ **Verified bridge server functionality** - endpoint returns proper AI SDK v5 format
+6. ✅ **Verified complete pipeline** - real-time streaming from vault-aware Claude
 
-**Bridge Server Implementation:**
-```javascript
-// server/index.js - Working AI SDK v5 endpoint
-app.post('/api/ai-chat', async (req, res) => {
-  const { messages } = req.body;
-  const claudeProvider = createClaudeProvider();
-  
-  const result = streamText({
-    model: claudeProvider,
-    messages,
-    maxTokens: 4000,
-  });
+**Technical Root Cause & Solution:**
 
-  // AI SDK v5 streaming format
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  for await (const chunk of result.textStream) {
-    const data = `0:"${chunk.replace(/"/g, '\\"')}"\n`;
-    res.write(data);
-  }
-  res.write('d:\n');
-  res.end();
-});
+The core issue was format mismatch:
+- **❌ Problem**: `toTextStreamResponse()` sends plain text chunks
+- **✅ Solution**: `toUIMessageStreamResponse()` sends proper AI SDK v5 UI Message chunks
+
+**Key Implementation Changes:**
+- Bridge Server: Use `toUIMessageStreamResponse()` for useChat compatibility
+- Web Prototype: Remove fetch timeouts for unlimited Claude processing time  
+- Frontend: Support AI SDK v5 message parts array format
+- Architecture: Pure AI SDK v5 pipeline with zero format conversion
+
+**Current Status:** ✅ **FULLY OPERATIONAL**
+- ✅ **Real-time streaming**: Messages appear in chat as Claude types
+- ✅ **Multi-turn conversations**: Conversation history maintained 
+- ✅ **No timeouts**: Claude can take unlimited time for complex operations
+- ✅ **Vault intelligence**: Claude reads actual CLAUDE.md rules and vault structure
+- ✅ **Format compatibility**: Perfect AI SDK v5 integration end-to-end
+
+**Final Architecture:**
+```
+✅ useChat() → ✅ /api/chat → ✅ /api/ai-chat → ✅ toUIMessageStreamResponse() → ✅ Real-time UI updates
 ```
 
-**Web Prototype Implementation:**
-```javascript
-// web-prototype/app/api/chat/route.ts - Direct proxy
-export async function POST(req: NextRequest) {
-  const { messages } = await req.json();
-  
-  // Direct AI SDK v5 pipeline - no conversion!
-  const response = await fetch('http://localhost:3001/api/ai-chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages }),
-  });
-  
-  return new Response(response.body, {
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-  });
-}
-```
-
-**Frontend Implementation:**
-```javascript
-// web-prototype/app/page.tsx - Correct useChat usage
-const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-  api: '/api/chat'
-});
-```
-
-**Current Status:** ✅ **FULLY WORKING**
-- ✅ Bridge server `/api/ai-chat` streams correctly (tested via curl)
-- ✅ Web prototype compiles and loads without errors  
-- ✅ **Frontend form submission working** - POST requests successful
-- ✅ **AI SDK v5 integration complete** - `useChat()` with `sendMessage()` pattern
-- ✅ **Messages streaming correctly** - Real-time vault organization suggestions
-- ✅ **Claude vault intelligence operational** - Recognizes vault structure and categories
-
-**Issues Resolved:**
-1. ✅ Updated to AI SDK v5 `sendMessage()` pattern (replaced deprecated `handleSubmit`)
-2. ✅ Added manual input state management with `useState`
-3. ✅ Fixed message rendering for AI SDK v5 format (`parts` array)
-4. ✅ Confirmed full pipeline functionality with vault-aware responses
-
-**Architecture Achieved:**
-```
-✅ useChat() → ✅ sendMessage() → ✅ /api/chat → ✅ /api/ai-chat → ✅ streamText() → ✅ Frontend Display
-```
-
-**Validation Results:**
-- **Response Quality:** Claude provides intelligent vault organization suggestions
-- **Performance:** ~7 second response time for complex vault analysis
-- **Streaming:** Real-time token delivery via AI SDK v5 native format
-- **Intelligence:** Recognizes existing vault structure and offers contextual help
+**Performance & Quality:**
+- **Streaming Speed**: Real-time token-by-token delivery
+- **Intelligence**: Vault-aware responses with category suggestions
+- **Reliability**: No format conversion failures, pure AI SDK v5 pipeline
+- **User Experience**: Natural chat interface with Claude's vault expertise
 
 ---
 
