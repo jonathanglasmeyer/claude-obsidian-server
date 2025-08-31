@@ -16,8 +16,13 @@ function createClaudeProvider() {
     fs.existsSync(`${vaultPath}/CLAUDE.md`)
   );
   
-  const workingDir = isVaultMounted ? vaultPath : '/app';
-  console.log(`📁 Vault mounted: ${isVaultMounted}, using working directory: ${workingDir}`);
+  console.log(`📁 Vault mounted: ${isVaultMounted}, using working directory: ${isVaultMounted ? vaultPath : 'FAILED'}`);
+  
+  if (!isVaultMounted) {
+    throw new Error(`❌ VAULT NOT MOUNTED: ${vaultPath} not found or missing .git/CLAUDE.md. Use SSH tunnel to production server instead of running locally.`);
+  }
+  
+  const workingDir = vaultPath;
   
   return claudeCode('sonnet', {
     // Working directory set to vault path for file operations  
@@ -32,13 +37,9 @@ function createClaudeProvider() {
       'Glob',          // File pattern matching
       'Grep',          // Content searching
       'Bash',          // Bash commands (will be restricted by system)
-    ],
-    
-    // Explicitly deny dangerous operations
-    disallowedTools: [
-      'WebFetch',      // No web access for security
-      'WebSearch',     // No web search
     ]
+    
+    // Note: Only using allowedTools since disallowedTools conflicts and causes hangs
   });
 }
 

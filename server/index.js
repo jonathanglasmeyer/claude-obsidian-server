@@ -2,9 +2,11 @@ import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
 import cors from 'cors';
+import { streamText } from 'ai';
 import SessionStore from './session-store.js';
 import AIService from './ai-service.js';
 import SessionManager from './session-manager.js';
+import { createClaudeProvider } from './claude-provider.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -308,6 +310,75 @@ app.post('/api/session/:id/confirm', async (req, res) => {
   } catch (error) {
     console.error('Error confirming session:', error);
     res.status(500).json({ error: 'Failed to confirm session' });
+  }
+});
+
+// Direct AI SDK v5 endpoint - no session management, direct streaming
+app.post('/api/ai-chat', async (req, res) => {
+  try {
+    const { messages } = req.body;
+    
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: 'Messages array is required' });
+    }
+
+    console.log('🤖 AI SDK v5 chat request with', messages.length, 'messages');
+    console.log('📝 Message format:', JSON.stringify(messages[0], null, 2));
+    
+    // Create provider directly to bypass AIService issues
+    const claudeProvider = createClaudeProvider();
+    
+    // Convert UIMessages to CoreMessages format manually
+    const coreMessages = messages.map(msg => ({
+      role: msg.role,
+      content: msg.parts?.map(part => part.text).join('') || msg.content || ''
+    }));
+    
+    const result = streamText({
+      model: claudeProvider,
+      messages: coreMessages,
+      maxTokens: 4000,
+      onError: ({ error }) => {
+        console.error('🚨 StreamText error (suppressed):', error);
+      }
+    });
+
+    // Use AI SDK's UI Message Stream Response for useChat compatibility
+    const streamResponse = result.toUIMessageStreamResponse();
+    
+    // Copy headers from AI SDK response
+    for (const [key, value] of streamResponse.headers.entries()) {
+      res.setHeader(key, value);
+    }
+    
+    console.log('📤 Using AI SDK native toUIMessageStreamResponse');
+    
+    // Stream the response
+    const reader = streamResponse.body.getReader();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(value);
+      }
+      console.log('📤 Stream completed with UI message format');
+      res.end();
+    } catch (streamError) {
+      console.error('❌ Stream iteration error:', streamError);
+      reader.releaseLock();
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Streaming failed', details: streamError.message });
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ AI SDK v5 chat error:', error);
+    if (!res.headersSent) {
+      return res.status(500).json({ 
+        error: 'AI chat request failed',
+        details: error.message 
+      });
+    }
   }
 });
 

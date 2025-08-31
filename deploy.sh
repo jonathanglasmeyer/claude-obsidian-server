@@ -38,14 +38,14 @@ remote_cmd "cd $REMOTE_PATH && \
     cd server && npm install --production && \
     cd .. && \
     echo '🔄 Stopping existing services...' && \
-    docker-compose down || true && \
+    docker compose down || true && \
     echo '🚀 Starting services...' && \
-    docker-compose up -d --build && \
+    docker compose up -d --build && \
     echo '⏳ Waiting for services to be ready...' && \
     sleep 10 && \
     echo '🩺 Checking service health...' && \
-    docker-compose ps && \
-    curl -f http://localhost:3001/health || echo 'Health check failed - check logs with: docker-compose logs'"
+    docker compose ps && \
+    curl -f http://localhost:3001/health || echo 'Health check failed - check logs with: docker compose logs'"
 
 echo "✅ Deployment complete!"
 echo ""
@@ -54,5 +54,5 @@ echo "   Health: https://obsidian.quietloop.dev/health"
 echo "   API: https://obsidian.quietloop.dev/api/"
 echo ""
 echo "📊 Monitor with:"
-echo "   ssh $REMOTE_HOST 'cd $REMOTE_PATH && docker-compose logs -f'"
-echo "   ssh $REMOTE_HOST 'cd $REMOTE_PATH && docker-compose ps'"
+echo "   ssh $REMOTE_HOST 'cd $REMOTE_PATH && docker compose logs -f'"
+echo "   ssh $REMOTE_HOST 'cd $REMOTE_PATH && docker compose ps'"

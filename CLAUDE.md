@@ -3,21 +3,23 @@
 ## Project Overview
 Mobile React Native app that acts as a share target to intelligently process content into an Obsidian vault using Claude Code (Max plan, no API key required). The app receives shared URLs/text, sends them to a bridge server that runs Claude Code CLI sessions, proposes vault organization, and executes git operations upon user confirmation.
 
-**Status: Phase 3 Complete** - Bridge server operational with AI SDK integration and vault access.
+**Status: Phase 3.5 Complete** - Web prototype with direct AI SDK v5 integration operational.
 
 ## Architecture
 
 **Components:**
+- **Web Prototype (Next.js 14)** - Direct AI SDK v5 chat interface ✅ *(Phase 3.5)*
 - **Mobile App (RN)** - Share target with streaming UI *(Phase 4)*
 - **Bridge Server (Node.js)** - AI SDK integration with Claude Code provider ✅
 - **Session Store (Redis)** - Temporary session state ✅  
 - **Obsidian Vault (Git)** - Target repository with existing CLAUDE.md rules ✅
 
-**Flow:**
-1. Share URL/text → RN app → Bridge server
-2. Server uses AI SDK with Claude Code provider (vault context)
-3. Claude proposes file location/format via SSE stream ✅
-4. User confirms/modifies → Claude executes + commits to git *(ready to test)*
+**Flows:**
+1. **Web Flow**: Browser → `useChat()` → `/api/ai-chat` → `streamText()` → Claude Code CLI ✅
+2. **Mobile Flow**: Share URL/text → RN app → Session API → Bridge server *(Phase 4)*
+3. Server uses AI SDK with Claude Code provider (vault context)
+4. Claude proposes file location/format via streaming
+5. User confirms/modifies → Claude executes + commits to git
 
 ## Bridge Server
 
@@ -191,7 +193,9 @@ ssh hetzner 'cd ~/obsidian-bridge-server && docker compose logs server --tail=10
 - `{"status":"unhealthy"}` → Redis connection issues  
 - Stream timeouts → Check vault permissions or lazy initialization logs
 
-## Current Status
+## Phase Progress
+
+### Phase 3: Bridge Server with AI SDK ✅
 - ✅ AI SDK streaming operational (localhost:3001) 
 - ✅ Multi-turn conversations + session management
 - ✅ Production deployment active on Hetzner
@@ -199,50 +203,295 @@ ssh hetzner 'cd ~/obsidian-bridge-server && docker compose logs server --tail=10
 - ✅ Claude Code reads actual CLAUDE.md rules and vault structure
 - ✅ Real-time streaming validated via SSH tunnel
 - ✅ Vault intelligence confirmed (categories, rules, organization)
-- 🚀 **Next:** Phase 4 Android App
 
-## API Endpoints for Mobile Integration
+### Phase 3.5: Web Prototype ✅ *(New Phase)*
+- ✅ **Direct AI SDK v5 Integration** - Zero translation layers
+- ✅ **Frontend**: Next.js 14 + React 18 + AI SDK v5 `useChat()`
+- ✅ **Backend**: Added `/api/ai-chat` endpoint with `streamText()`
+- ✅ **Architecture**: Perfect format alignment (both ends use AI SDK v5)
+- ✅ **UI**: Clean chat interface with real-time streaming
+- ✅ **Deployment**: Web prototype running on `localhost:3002`
+- ✅ **Integration Test**: Frontend→Backend pipeline verified
 
-**Base URL:** `http://localhost:3001` (via SSH tunnel)
+### Phase 3.5 Technical Achievements
+**Problem Solved**: Originally planned complex translation between session-based SSE and AI SDK formats
+**Solution**: Direct AI SDK v5 pipeline - `useChat()` → `/api/ai-chat` → `streamText()` → Claude Code CLI
+**Benefit**: No format conversion overhead, native streaming, cleaner architecture
 
-### Core Endpoints
+### Phase 4: Android App *(Next)*
+- 🎯 React Native implementation
+- 🎯 Share target functionality  
+- 🎯 Mobile-optimized proposal UI
+- 🎯 Can use either API approach:
+  - Direct AI SDK v5 (like web prototype)
+  - Session-based API (for offline/reconnect scenarios)
 
-**Health Check:** `GET /health`
-```json
-{"status":"healthy","timestamp":"2025-08-31T14:07:06.370Z","version":"1.0.0","redis":true}
+## API Architecture & Endpoints
+
+**Bridge Server:** `http://localhost:3001` (via SSH tunnel)  
+**Web Prototype:** `http://localhost:3002` ✅
+
+### AI SDK v5 Integration Pattern
+
+The bridge server uses `ai-sdk-provider-claude-code` internally with `streamText()`. The frontend uses AI SDK v5 `useChat()` hook. **Key insight: Both ends use AI SDK v5, so formats match perfectly - no translation needed.**
+
+### Current API Endpoints (Bridge Server)
+
+#### 1. Session-Based API (Mobile/Complex Workflows)
+```
+GET  /health                     → Health check + Redis status
+POST /api/session               → Create session with content
+GET  /api/session/:id           → Get session details  
+GET  /api/session/:id/stream    → SSE stream (custom format)
+POST /api/session/:id/message   → Continue conversation
+POST /api/session/:id/confirm   → Execute proposals
 ```
 
-**Create Session:** `POST /api/session`
+**Use Case:** Mobile apps, async processing, session resume after connection drops
+
+#### 2. Direct AI SDK v5 API ✅ *(New)*
+```
+POST /api/ai-chat               → Direct AI SDK v5 streaming
+```
+
+**Use Case:** Web chat interfaces, real-time streaming, native AI SDK integration
+
+**AI SDK v5 Format:**
 ```json
+// INPUT: useChat format
 {
-  "content": "URL or text to organize",
-  "type": "url|text"
+  "messages": [
+    {"role": "user", "content": [{"type": "text", "text": "Organize this content..."}]}
+  ]
 }
-// Returns: {"sessionId": "uuid", "status": "created"}
+
+// OUTPUT: streamText().toDataStreamResponse() 
+// Native AI SDK v5 streaming - no translation needed!
 ```
 
-**Stream Processing:** `GET /api/session/:id/stream`
-- Server-Sent Events stream
-- Real-time Claude responses
-- Compatible with Vercel AI SDK `useChat`
+### Web Prototype Integration ✅
 
-**Continue Conversation:** `POST /api/session/:id/message`  
-```json
-{
-  "message": "User response or modification"
-}
+#### Frontend (Next.js 14)
+```
+useChat() → POST /api/chat → Bridge server /api/ai-chat → streamText()
 ```
 
-**Execute Proposal:** `POST /api/session/:id/confirm`
-```json
-{
-  "action": "confirm|modify|cancel"
-}
+**Status:** ✅ **Working** - Direct AI SDK v5 pipeline operational
+**URL:** `http://localhost:3002`
+**Features:** Real-time streaming, chat interface, proposal handling
+
+### Recommended API Architecture
+
+```
+┌─────────────────┐    AI SDK v5     ┌──────────────────┐    AI SDK v5    ┌─────────────────┐
+│   Frontend      │ ────useChat────→ │  Bridge Server   │ ──streamText──→ │  Claude Code    │
+│   useChat()     │                  │  /api/ai-chat    │                 │     CLI         │
+│   localhost:3002│ ←──streaming───  │  localhost:3001  │ ←──streaming──  │                 │
+└─────────────────┘    format        └──────────────────┘    format       └─────────────────┘
 ```
 
-### Integration Notes for Phase 4
+**Benefits:**
+- ✅ No format translation needed
+- ✅ Native AI SDK v5 streaming
+- ✅ Direct `useChat` → `streamText` pipeline
+- ✅ Built-in data parts support for proposals
+- ✅ Maintains existing session system for mobile
 
-**React Native:** Use `@vercel/ai` `useChat` hook with SSE endpoint
-**Authentication:** OAuth token handled server-side only
-**Error Handling:** Built-in timeout and retry mechanisms
-**Session Management:** 5-minute timeout, Redis persistence
+### Two API Approaches Compared
+
+#### 1. Session-Based API (Original)
+**Use Case:** Complex multi-turn conversations, mobile apps, async processing
+```javascript
+// Step-by-step approach
+POST /api/session → Creates session, starts AI processing
+GET  /api/session/:id/stream → Custom SSE format, Redis persistence
+POST /api/session/:id/message → Continue conversation with context
+POST /api/session/:id/confirm → Execute file operations
+```
+
+**Benefits:**
+- ✅ Redis persistence across requests
+- ✅ Session resume/reconnect capability 
+- ✅ Perfect for mobile (connection drops)
+- ✅ Async processing (create session, stream later)
+- ✅ Custom proposal handling (confirm/modify workflow)
+- ✅ Multi-user session isolation
+
+**Trade-offs:**
+- ❌ Custom SSE format (not AI SDK native)
+- ❌ More complex client integration
+- ❌ Requires session management
+
+#### 2. Direct AI SDK v5 API (New)
+**Use Case:** Simple web chat interfaces, real-time streaming
+```javascript
+// Direct approach
+POST /api/ai-chat → AI SDK v5 messages → Direct streamText() response
+```
+
+**Benefits:**
+- ✅ Zero format translation
+- ✅ Native AI SDK v5 streaming
+- ✅ Direct `useChat` → `streamText` pipeline
+- ✅ Built-in data parts for proposals
+- ✅ Simpler client integration
+- ✅ Less latency (no session overhead)
+
+**Trade-offs:**
+- ❌ No persistence between requests
+- ❌ Connection drops = conversation lost
+- ❌ No async processing capability
+- ❌ Harder to implement complex proposal workflows
+
+### When to Use Which
+
+**Session-Based API:**
+- Mobile apps (React Native, Flutter)
+- Complex proposal workflows (file organization)
+- Multi-step interactions requiring persistence
+- When you need session resume after connection drops
+
+**Direct AI SDK v5 API:**
+- Web chat interfaces (`useChat` hook)
+- Simple streaming conversations
+- Real-time interactions
+- When you want native AI SDK v5 integration
+
+**Current Implementation:**
+- ✅ Session-based API: Fully implemented, tested
+- ✅ Direct AI SDK v5 API: Just added to bridge server
+- 🎯 Web prototype: Uses direct API for simplicity
+- 🎯 Mobile app: Will use session-based API for robustness
+
+### Architecture Decision
+
+Both APIs can coexist! Your bridge server now has:
+```
+/api/session/* → Session-based (Redis, persistence, mobile-first)
+/api/ai-chat   → Direct AI SDK v5 (stateless, web-first)
+```
+
+This gives you the best of both worlds depending on client needs.
+
+---
+
+## Local Development Workflow ⚠️ IMPORTANT
+
+### The Correct Way to Develop
+
+**✅ USE LOCAL SERVER for development:**
+```bash
+# Start local bridge server with your vault
+cd server && OBSIDIAN_VAULT_PATH=/Users/jonathan.glasmeyer/Projects/obsidian-vault CLAUDE_CODE_OAUTH_TOKEN=$CLAUDE_CODE_OAUTH_TOKEN npm start
+
+# Verify local server is working
+curl -s http://localhost:3001/health
+# Expected: {"status":"healthy","timestamp":"...","version":"1.0.0","redis":true}
+
+# Start web prototype (connects to local server)
+cd web-prototype && pnpm run dev
+# Web app: http://localhost:3002
+```
+
+### Common Gotchas & Solutions
+
+#### 🚨 Problem: "Invalid settings: cwd: Working directory must exist"
+**Cause:** Using wrong vault path for local development
+
+**Solution:** Use correct local vault path:
+```bash
+# ❌ WRONG - production server path doesn't exist locally
+cd server && OBSIDIAN_VAULT_PATH=/srv/claude-jobs/obsidian-vault npm start
+
+# ✅ CORRECT - local vault path
+cd server && OBSIDIAN_VAULT_PATH=/Users/jonathan.glasmeyer/Projects/obsidian-vault CLAUDE_CODE_OAUTH_TOKEN=$CLAUDE_CODE_OAUTH_TOKEN npm start
+```
+
+#### 🚨 Problem: Requests timeout or hang
+**Cause:** SSH tunnel died or port conflict
+
+**Solution:** Restart tunnel:
+```bash
+# Kill any existing tunnel
+pkill -f "ssh.*3001:localhost:3001"
+
+# Check if port 3001 is free
+lsof -i :3001
+
+# Restart tunnel
+ssh -L 3001:localhost:3001 hetzner -N &
+```
+
+#### 🚨 Problem: Web prototype shows connection errors
+**Cause:** Web prototype trying to connect to non-existent local server
+
+**Solution:** Verify tunnel first, then restart web prototype:
+```bash
+# Test tunnel health
+curl -s http://localhost:3001/health
+
+# If healthy, restart web prototype
+cd web-prototype && pnpm run dev
+```
+
+### Architecture: Local vs Production
+
+```
+DEVELOPMENT (via SSH tunnel):
+┌─────────────────┐    localhost:3002    ┌─────────────────────┐    tunnel    ┌─────────────────────┐
+│  Web Prototype  │ ────────────────────→ │   SSH Tunnel        │ ──────────→ │  Production Server  │
+│  (Next.js)      │                       │  localhost:3001     │             │  Hetzner + Vault    │
+└─────────────────┘                       └─────────────────────┘             └─────────────────────┘
+
+PRODUCTION (direct):
+┌─────────────────┐    obsidian.domain.com    ┌─────────────────────┐
+│  Mobile App     │ ───────────────────────────→ │  Production Server  │
+│  (React Native) │                              │  Hetzner + Vault    │
+└─────────────────┘                              └─────────────────────┘
+```
+
+### Vault Integration Status
+
+**Production Server (Hetzner):**
+- ✅ Vault mounted at `/srv/claude-jobs/obsidian-vault`
+- ✅ Claude Code CLI installed and authenticated
+- ✅ Redis running and connected
+- ✅ AI SDK provider working with vault context
+- ✅ Real-time streaming operational
+
+**Local Development:**
+- ❌ No vault (intentionally fails with clear error)
+- ✅ SSH tunnel connects to production vault
+- ✅ Web prototype works seamlessly via tunnel
+
+### Testing Commands
+
+```bash
+# Test tunnel health
+curl -s http://localhost:3001/health
+
+# Test session creation
+curl -X POST http://localhost:3001/api/session \
+  -H "Content-Type: application/json" \
+  -d '{"content": "Test content", "type": "text"}' \
+  | jq -r '.sessionId'
+
+# Test streaming (replace SESSION_ID)
+curl -N http://localhost:3001/api/session/SESSION_ID/stream
+
+# Expected streaming output:
+# data: {"type":"connected","sessionId":"...","timestamp":"..."}
+# data: {"type":"chunk","content":"I'll analyze this content...","timestamp":"..."}
+# data: {"type":"completed","timestamp":"..."}
+```
+
+### Current Status ✅
+
+- **Phase 3**: Bridge server operational on production
+- **Phase 3.5**: Web prototype working via SSH tunnel  
+- **SSH Tunnel**: Stable connection to production vault
+- **Vault Integration**: Claude reads actual CLAUDE.md rules and vault structure
+- **Intelligence**: Makes smart categorization suggestions based on content
+- **Ready for**: Phase 4 mobile app development
+
+**Next Phase**: React Native app using same session-based API via production endpoints.
