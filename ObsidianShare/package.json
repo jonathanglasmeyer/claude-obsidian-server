@@ -1,0 +1,30 @@
+{
+  "name": "obsidianshare",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@ai-sdk/react": "^2.0.29",
+    "@obsidian-bridge/shared-components": "file:../packages/shared-components",
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "ai": "^5.0.29",
+    "expo": "~53.0.22",
+    "expo-intent-launcher": "~12.1.5",
+    "expo-sharing": "~13.1.5",
+    "expo-status-bar": "~2.2.3",
+    "react": "19.0.0",
+    "react-native": "0.79.6",
+    "react-native-markdown-display": "^7.0.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@types/react": "~19.0.10",
+    "typescript": "~5.8.3"
+  },
+  "private": true
+}

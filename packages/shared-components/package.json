@@ -1,0 +1,23 @@
+{
+  "name": "@obsidian-bridge/shared-components",
+  "version": "1.0.0",
+  "description": "Shared components for Obsidian Bridge web and mobile apps",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "obsidian",
+    "react",
+    "react-native",
+    "components"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/react": "^18.3.24",
+    "typescript": "^5.9.2"
+  }
+}
