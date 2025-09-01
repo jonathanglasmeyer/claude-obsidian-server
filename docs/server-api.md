@@ -97,6 +97,7 @@ extractDeltaFromChunk(chunk) → string | null
 
 ## Data Flow
 
+### Main Chat Streaming Flow (Primary Path)
 ```
 ┌─────────────┐    POST /api/chat     ┌─────────────────┐
 │   Client    │ ─────────────────────→ │   index.js      │
@@ -105,7 +106,7 @@ extractDeltaFromChunk(chunk) → string | null
        ↑                                       │
        │                               ┌───────┴────────┐
        │                               │  Validate &    │
-       │                               │  Extract Data  │
+       │                               │ Load History   │
        │                               └───────┬────────┘
        │                                       │
        │                               ┌───────▼────────┐
@@ -123,18 +124,11 @@ extractDeltaFromChunk(chunk) → string | null
        │                               │ (Obsidian Vault)│
        │                               └───────┬────────┘
        │                                       │
-       │                                 Stream Chunks
+       │                          toUIMessageStreamResponse()
        │                                       │
-       │                               ┌───────▼────────┐
-       │                               │extractDeltaFromChunk()
-       │                               │(delta-extractor.js)
-       │                               └───────┬────────┘
-       │                                       │
-       │    Server-Sent Events          ┌─────▼─────┐
-       │ ◄─────────────────────────────  │SessionStore│
-       │                               │(Redis/Mem) │
-       │                               │   Persist   │
-       │                               └─────────────┘
+       │    DIRECT STREAM                      ▼
+       │ ◄──────────────────────────────────────┘
+       │    (Server-Sent Events)              
        │
    ┌───▼────┐
    │ Real-  │
@@ -142,8 +136,30 @@ extractDeltaFromChunk(chunk) → string | null
    │ Chat   │
    │ UI     │
    └────────┘
+```
 
-Session Management Flow:
+### Parallel Session Persistence (Side Process)
+```
+       Stream Chunks (copy)
+              │
+              ▼
+    ┌─────────────────┐     Extract Text     ┌─────────────────┐
+    │extractDeltaFrom │ ─────────────────→   │ Accumulate      │
+    │Chunk()          │                      │ assistantMessage│
+    │(delta-extractor)│                      │                 │
+    └─────────────────┘                      └─────────┬───────┘
+                                                       │
+                                              After Stream Complete
+                                                       │
+                                               ┌───────▼────────┐
+                                               │  SessionStore  │
+                                               │ .saveChat()    │
+                                               │ (Redis/Memory) │
+                                               └────────────────┘
+```
+
+### Session Management Flow
+```
 ┌─────────────┐    GET /api/chats     ┌─────────────────┐
 │   Client    │ ─────────────────────→ │   index.js      │
 └─────────────┘                       └─────────┬───────┘
