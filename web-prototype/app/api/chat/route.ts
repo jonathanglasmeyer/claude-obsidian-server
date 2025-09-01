@@ -3,19 +3,49 @@ import { NextRequest } from 'next/server';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { messages } = body;
+    const { messages, chatId: bodyChatId } = body;
     
-    // Always connect to localhost:3001 - either SSH tunnel or local server
-    const apiUrl = 'http://localhost:3001/api/ai-chat';
-    console.log('🔗 Connecting to bridge server at localhost:3001');
+    // Extract chatId from query string AND body (body takes precedence)
+    const { searchParams } = new URL(req.url);
+    const queryChatId = searchParams.get('chatId') === 'new' ? null : searchParams.get('chatId');
+    const chatId = bodyChatId || queryChatId;
     
-    console.log('Frontend messages:', JSON.stringify(messages, null, 2));
+    // Connect to new server running on localhost:3000
+    const apiUrl = 'http://localhost:3000/api/chat';
+    console.log('🔗 Connecting to bridge server v2.0 at localhost:3000');
+    
+    console.log('Frontend messages:', messages.length, 'messages');
+    console.log('Frontend chatId (from query):', queryChatId);
+    console.log('Frontend chatId (from body):', bodyChatId);
+    console.log('Frontend chatId (final):', chatId);
+    console.log('Request URL:', req.url);
     console.log(`Connecting to: ${apiUrl}`);
+    
+    // 🚨 HARD ERROR: Reject requests without chatId
+    if (!chatId) {
+      console.error('❌ CRITICAL ERROR: No chatId provided! Cannot send message without session.');
+      console.error('   - Query chatId:', queryChatId);
+      console.error('   - Body chatId:', bodyChatId);
+      console.error('   - This indicates a serious bug in session management');
+      return Response.json(
+        { 
+          error: 'CRITICAL: No chatId provided',
+          details: 'Cannot send message without active session ID. This is a bug in the frontend.',
+          debug: {
+            url: req.url,
+            hasQuery: !!queryChatId,
+            hasBody: !!bodyChatId,
+            messagesCount: messages?.length || 0
+          }
+        },
+        { status: 400 }
+      );
+    }
     
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages, chatId }),
       // No timeout - let Claude take as long as needed
     });
 
