@@ -16,14 +16,3 @@ export function extractDeltaFromChunk(chunk) {
   return null;
 }
 
-// Old buggy version for comparison
-export function extractDeltaFromChunkOld(chunk) {
-  if (chunk.includes('"type":"text-delta"')) {
-    // Buggy regex that stops at first quote
-    const match = chunk.match(/"delta":"([^"]+)"/);
-    if (match) {
-      return match[1];
-    }
-  }
-  return null;
-}
