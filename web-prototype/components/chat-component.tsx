@@ -4,8 +4,6 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSessions } from '@/hooks/use-sessions';
-import { UserAvatar } from '@/components/avatars/user-avatar';
-import { ClaudeAvatar } from '@/components/avatars/claude-avatar';
 import {
   Conversation,
   ConversationContent,
@@ -37,9 +35,10 @@ import type { ToolUIPart } from 'ai';
 interface ChatComponentProps {
   sessionId: string;
   sessionTitle: string;
+  onToggleSidebar?: () => void;
 }
 
-export function ChatComponent({ sessionId, sessionTitle }: ChatComponentProps) {
+export function ChatComponent({ sessionId, sessionTitle, onToggleSidebar }: ChatComponentProps) {
   const [input, setInput] = useState('');
   const { loadSessionMessages } = useSessions();
   
@@ -218,10 +217,28 @@ export function ChatComponent({ sessionId, sessionTitle }: ChatComponentProps) {
     <div className="flex-1 flex flex-col min-w-0">
       {/* Header */}
       <div className="border-b p-4">
-        <h1 className="text-xl font-semibold tracking-tight">Obsidian Vault Organizer</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Chat: {sessionTitle}
-        </p>
+        <div className="flex items-center gap-3">
+          {/* Hamburger Menu Button */}
+          {onToggleSidebar && (
+            <button
+              onClick={onToggleSidebar}
+              className="p-2 hover:bg-muted rounded-md transition-colors flex-shrink-0"
+              title="Toggle sidebar"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
+          )}
+          <div className="flex-1">
+            <h1 className="text-xl font-semibold tracking-tight">Obsidian Vault Organizer</h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Chat: {sessionTitle}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Chat Area */}
@@ -236,11 +253,6 @@ export function ChatComponent({ sessionId, sessionTitle }: ChatComponentProps) {
               const uniqueKey = `${message.id || 'no-id'}-${messageIndex}`;
               return (
                 <Message key={uniqueKey} from={message.role}>
-                  {message.role === 'user' ? (
-                    <UserAvatar key={`${uniqueKey}-avatar`} />
-                  ) : (
-                    <ClaudeAvatar key={`${uniqueKey}-avatar`} />
-                  )}
                   <MessageContent>
                     {message.parts ? (
                       message.parts.map((part, index) => renderMessagePart(part, `${uniqueKey}-${index}`))
@@ -255,7 +267,6 @@ export function ChatComponent({ sessionId, sessionTitle }: ChatComponentProps) {
             {/* Loading spinner */}
             {status === 'submitted' && (
               <Message key="loading-message" from="assistant">
-                <ClaudeAvatar key="loading-avatar" />
                 <MessageContent>
                   <div className="min-h-6 flex items-center">
                     <Loader size={16} />

@@ -14,9 +14,8 @@ export type MessageProps = HTMLAttributes<HTMLDivElement> & {
 export const Message = ({ className, from, ...props }: MessageProps) => (
   <div
     className={cn(
-      'group flex w-full items-end justify-end gap-2 py-4',
-      from === 'user' ? 'is-user' : 'is-assistant flex-row-reverse justify-end',
-      '[&>div]:max-w-[80%]',
+      'group w-full py-4',
+      from === 'user' ? 'is-user flex justify-end' : 'is-assistant',
       className
     )}
     {...props}
@@ -32,10 +31,11 @@ export const MessageContent = ({
 }: MessageContentProps) => (
   <div
     className={cn(
-      'flex flex-col gap-2 overflow-hidden rounded-lg px-4 py-3 text-foreground text-sm',
-      'group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground',
-      'group-[.is-assistant]:bg-secondary group-[.is-assistant]:text-foreground',
-      'is-user:dark',
+      'flex flex-col gap-2 overflow-hidden text-foreground text-sm',
+      // User messages: very light gray rounded bubble, max-width with margin
+      'group-[.is-user]:bg-gray-100 group-[.is-user]:dark:bg-gray-100 group-[.is-user]:dark:text-gray-900 group-[.is-user]:rounded-2xl group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:max-w-3xl group-[.is-user]:mr-4',
+      // Assistant messages: full width with centered container, no background
+      'group-[.is-assistant]:max-w-3xl group-[.is-assistant]:mx-auto group-[.is-assistant]:px-4 group-[.is-assistant]:py-2',
       className
     )}
     {...props}

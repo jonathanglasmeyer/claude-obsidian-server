@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSessions } from '@/hooks/use-sessions';
 import { SessionSidebar } from '@/components/session-sidebar';
 import { ChatComponent } from '@/components/chat-component';
 
 export default function Home() {
+  // ✅ Sidebar collapse state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
   // ✅ CLEAN: Only session management, no chat logic
   const {
     sessions,
@@ -81,6 +84,7 @@ export default function Home() {
         onSessionCreate={handleSessionCreate}
         onSessionDelete={deleteSession}
         onSessionRename={renameSession}
+        isCollapsed={isSidebarCollapsed}
       />
 
       {/* ✅ FIXED: ChatComponent with guaranteed sessionId */}
@@ -88,6 +92,7 @@ export default function Home() {
         key={activeSessionId} // Force new component instance per session
         sessionId={activeSessionId}
         sessionTitle={activeSession?.title || 'Chat'}
+        onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
     </div>
   );
