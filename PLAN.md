@@ -49,7 +49,7 @@ ls -la
 rm -rf /tmp/test-claude /tmp/test-vault
 ```
 
-**Success Criteria:** 
+**Success Criteria:**
 - ✅ Claude CLI installed and authenticated
 - ✅ Can process text and files
 - ✅ Can access vault repository
@@ -59,7 +59,7 @@ rm -rf /tmp/test-claude /tmp/test-vault
 
 ## Prerequisites Check
 - [ ] Verify `CLAUDE_CODE_OAUTH_TOKEN` is available
-- [ ] Confirm access to Obsidian vault repository  
+- [ ] Confirm access to Obsidian vault repository
 - [ ] Check Node.js ≥18 and npm/pnpm installed
 - [ ] Verify Android development environment setup
 
@@ -121,7 +121,58 @@ rm -rf /tmp/test-claude /tmp/test-vault
 - Claude Code operates in actual Obsidian vault directory
 - Real-time streaming validated via SSH tunnel (localhost:3001)
 - AI respects existing vault structure and CLAUDE.md rules
+## Phase 3.6: Direct AI SDK v5 Endpoint Implementation ✅ **COMPLETE**
 
+**Objective:** Implement vanilla AI SDK v5 pipeline: `useChat()` → `/api/ai-chat` → `streamText()` with no conversion layers.
+
+**Key Achievement:** **Fixed the core streaming issue** - `useChat` was receiving plain text instead of UI Message chunks.
+
+**What We Accomplished:**
+1. ✅ **Deployed `/api/ai-chat` endpoint** with direct Claude provider integration
+2. ✅ **Fixed deployment script** to use modern `docker compose` commands
+3. ✅ **CRITICAL FIX**: Changed from `toTextStreamResponse()` to `toUIMessageStreamResponse()`
+4. ✅ **Updated web prototype** to use native AI SDK v5 streaming without timeouts
+5. ✅ **Eliminated conversion complexity** - direct `/api/ai-chat` passthrough in web prototype
+6. ✅ **Verified complete pipeline** - real-time streaming from vault-aware Claude
+
+**Technical Root Cause & Solution:**
+
+The core issue was format mismatch:
+- **❌ Problem**: `toTextStreamResponse()` sends plain text chunks
+- **✅ Solution**: `toUIMessageStreamResponse()` sends proper AI SDK v5 UI Message chunks
+
+**Key Implementation Changes:**
+- Bridge Server: Use `toUIMessageStreamResponse()` for useChat compatibility
+- Web Prototype: Remove fetch timeouts for unlimited Claude processing time
+- Frontend: Support AI SDK v5 message parts array format
+- Architecture: Pure AI SDK v5 pipeline with zero format conversion
+
+**Current Status:** ✅ **FULLY OPERATIONAL**
+- ✅ **Real-time streaming**: Messages appear in chat as Claude types
+- ✅ **Multi-turn conversations**: Conversation history maintained
+- ✅ **No timeouts**: Claude can take unlimited time for complex operations
+- ✅ **Vault intelligence**: Claude reads actual CLAUDE.md rules and vault structure
+- ✅ **Format compatibility**: Perfect AI SDK v5 integration end-to-end
+
+**Final Architecture:**
+```
+✅ useChat() → ✅ /api/chat → ✅ /api/ai-chat → ✅ toUIMessageStreamResponse() → ✅ Real-time UI updates
+```
+
+**Performance & Quality:**
+- **Streaming Speed**: Real-time token-by-token delivery
+- **Intelligence**: Vault-aware responses with category suggestions
+- **Reliability**: No format conversion failures, pure AI SDK v5 pipeline
+- **User Experience**: Natural chat interface with Claude's vault expertise
+- **Web Content**: WebFetch and WebSearch enabled for URL processing
+
+**Known Limitation: Tool Call Visibility**
+- ⚠️ **Tool calls execute but are invisible** in the UI during streaming
+- **Current behavior**: Text streaming pauses during tool execution, resumes after completion
+- **User experience**: Brief pause in conversation flow during file operations
+- **Next phase**: Phase 3.7 - Tool call progress indicators and real-time tool execution visibility
+
+---
 ## Phase 4: Android App (Day 2-3)
 
 **Simplified by AI SDK Integration:**
@@ -137,70 +188,70 @@ cd ObsidianShare
 npm install
 ```
 
-### Step 3.2: Share Intent Configuration
+### Step 4.2: Share Intent Configuration
 - Edit `android/app/src/main/AndroidManifest.xml`:
   - Add share intent filter for text/plain
   - Configure activity launch mode
 - Test share target appears in Android share menu
 
-### Step 3.3: Core Dependencies
+### Step 4.3: Core Dependencies
 ```bash
 npm install react-native-share-intent
 npm install react-native-sse
 npm install @react-navigation/native @react-navigation/stack
 ```
 
-### Step 3.4: Share Handler Service
+### Step 4.4: Share Handler Service
 - Create `ShareHandlerService.js`
 - Extract shared content from intent
 - Queue if app not running
 
-### Step 3.5: API Client
+### Step 4.5: API Client
 - Create `BridgeAPI.js` with fetch wrapper
 - Implement session creation
 - Setup SSE connection handler
 
-### Step 3.6: Main UI Screen
+### Step 4.6: Main UI Screen
 - Create `ShareScreen.js` with:
   - Shared content preview
   - Loading spinner during processing
   - Claude response streaming display
   - Confirm/Cancel buttons
 
-### Step 3.7: Streaming Components
+### Step 4.7: Streaming Components
 - Create `StreamingText.js` for live token display
 - Create `ProposalView.js` for file preview
 - Handle markdown rendering
 
 ## Phase 5: Integration Testing (Day 3)
 
-### Step 4.1: Local Testing Setup
+### Step 5.1: Local Testing Setup
 - Clone Obsidian vault locally
 - Configure server with vault path
 - Start Redis and server
 
-### Step 4.2: End-to-End Flow Test
+### Step 5.2: End-to-End Flow Test
 1. Share URL from browser to app
 2. Verify session creation
 3. Check Claude proposal stream
 4. Test confirmation flow
 5. Verify git commit/push
 
-### Step 4.3: Content Type Testing
+### Step 5.3: Content Type Testing
 - Test article URL processing
 - Test plain text snippets
 - Test Twitter/X post URLs
 - Verify proper vault routing
 
-### Step 4.4: Error Scenarios
+### Step 5.4: Error Scenarios
 - Test network disconnection
 - Test Claude timeout
 - Test invalid content
 - Test git push failures
 
-## Phase 5: Deployment & Polish (Day 4)
+## Phase 6: Deployment & Polish (Day 4)
 
-### Step 5.1: Security Setup - Claude User & Git Access
+### Step 6.1: Security Setup - Claude User & Git Access
 Setup dedicated user for Claude operations:
 ```bash
 # Create dedicated user
@@ -229,7 +280,7 @@ sudo -u claude git config --global user.name "Claude Bot"
 sudo -u claude git config --global safe.directory /srv/claude-jobs/*
 ```
 
-### Step 5.2: Vault Repository Setup
+### Step 6.2: Vault Repository Setup
 ```bash
 # Clone Obsidian vault with repo-specific key
 cd /srv/claude-jobs
@@ -241,12 +292,12 @@ sudo chmod -R 700 /srv/claude-jobs/obsidian-vault
 
 **Manual Step:** Add `/home/claude/.ssh/id_ed25519_repo.pub` as Deploy Key in GitHub repo settings with write permissions.
 
-### Step 5.3: Server Deployment & Caddy Integration
+### Step 6.3: Server Deployment & Caddy Integration
 - Deploy to Hetzner server via SSH:
   ```bash
   # Copy project files to server
   scp -r . user@hetzner-server:~/obsidian-bridge-server/
-  
+
   # SSH into server and build
   ssh user@hetzner-server
   cd ~/obsidian-bridge-server
@@ -261,7 +312,7 @@ sudo chmod -R 700 /srv/claude-jobs/obsidian-vault
 - Restart Caddy container in cashflow project
 - Test obsidian.domain.com routing through Cloudflare
 
-### Step 5.4: Android App Build
+### Step 6.4: Android App Build
 ```bash
 cd android
 ./gradlew assembleRelease
@@ -270,12 +321,12 @@ cd android
 - Install on Pixel 9
 - Test share from various apps
 
-### Step 5.5: Monitoring Setup
+### Step 6.5: Monitoring Setup
 - Add basic logging to server
 - Monitor Redis memory usage
 - Track Claude API usage
 
-### Step 5.6: Documentation
+### Step 6.6: Documentation
 - Update README with setup instructions
 - Document environment variables
 - Add troubleshooting guide
@@ -346,58 +397,7 @@ cd android && ./gradlew assembleDebug
 4. ✅ Changes committed and pushed to git
 5. ✅ Full flow completes in <30 seconds
 
-## Phase 3.6: Direct AI SDK v5 Endpoint Implementation ✅ **COMPLETE**
 
-**Objective:** Implement vanilla AI SDK v5 pipeline: `useChat()` → `/api/ai-chat` → `streamText()` with no conversion layers.
-
-**Key Achievement:** **Fixed the core streaming issue** - `useChat` was receiving plain text instead of UI Message chunks.
-
-**What We Accomplished:**
-1. ✅ **Deployed `/api/ai-chat` endpoint** with direct Claude provider integration
-2. ✅ **Fixed deployment script** to use modern `docker compose` commands  
-3. ✅ **CRITICAL FIX**: Changed from `toTextStreamResponse()` to `toUIMessageStreamResponse()`
-4. ✅ **Updated web prototype** to use native AI SDK v5 streaming without timeouts
-5. ✅ **Eliminated conversion complexity** - direct `/api/ai-chat` passthrough in web prototype
-6. ✅ **Verified complete pipeline** - real-time streaming from vault-aware Claude
-
-**Technical Root Cause & Solution:**
-
-The core issue was format mismatch:
-- **❌ Problem**: `toTextStreamResponse()` sends plain text chunks
-- **✅ Solution**: `toUIMessageStreamResponse()` sends proper AI SDK v5 UI Message chunks
-
-**Key Implementation Changes:**
-- Bridge Server: Use `toUIMessageStreamResponse()` for useChat compatibility
-- Web Prototype: Remove fetch timeouts for unlimited Claude processing time  
-- Frontend: Support AI SDK v5 message parts array format
-- Architecture: Pure AI SDK v5 pipeline with zero format conversion
-
-**Current Status:** ✅ **FULLY OPERATIONAL**
-- ✅ **Real-time streaming**: Messages appear in chat as Claude types
-- ✅ **Multi-turn conversations**: Conversation history maintained 
-- ✅ **No timeouts**: Claude can take unlimited time for complex operations
-- ✅ **Vault intelligence**: Claude reads actual CLAUDE.md rules and vault structure
-- ✅ **Format compatibility**: Perfect AI SDK v5 integration end-to-end
-
-**Final Architecture:**
-```
-✅ useChat() → ✅ /api/chat → ✅ /api/ai-chat → ✅ toUIMessageStreamResponse() → ✅ Real-time UI updates
-```
-
-**Performance & Quality:**
-- **Streaming Speed**: Real-time token-by-token delivery
-- **Intelligence**: Vault-aware responses with category suggestions
-- **Reliability**: No format conversion failures, pure AI SDK v5 pipeline
-- **User Experience**: Natural chat interface with Claude's vault expertise
-- **Web Content**: WebFetch and WebSearch enabled for URL processing
-
-**Known Limitation: Tool Call Visibility**
-- ⚠️ **Tool calls execute but are invisible** in the UI during streaming
-- **Current behavior**: Text streaming pauses during tool execution, resumes after completion
-- **User experience**: Brief pause in conversation flow during file operations
-- **Next phase**: Phase 3.7 - Tool call progress indicators and real-time tool execution visibility
-
----
 
 ## Notes for Sonnet
 - Start with Phase 1-2 (server) first - get CLI integration working
