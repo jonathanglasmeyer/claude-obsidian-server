@@ -389,6 +389,13 @@ The core issue was format mismatch:
 - **Intelligence**: Vault-aware responses with category suggestions
 - **Reliability**: No format conversion failures, pure AI SDK v5 pipeline
 - **User Experience**: Natural chat interface with Claude's vault expertise
+- **Web Content**: WebFetch and WebSearch enabled for URL processing
+
+**Known Limitation: Tool Call Visibility**
+- ⚠️ **Tool calls execute but are invisible** in the UI during streaming
+- **Current behavior**: Text streaming pauses during tool execution, resumes after completion
+- **User experience**: Brief pause in conversation flow during file operations
+- **Next phase**: Phase 3.7 - Tool call progress indicators and real-time tool execution visibility
 
 ---
 

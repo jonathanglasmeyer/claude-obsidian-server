@@ -25,6 +25,7 @@ export default function Home() {
     actualMessages: messages
   });
 
+
   const [debugResponse, setDebugResponse] = useState('');
   
   const handleSubmit = (e: React.FormEvent) => {
