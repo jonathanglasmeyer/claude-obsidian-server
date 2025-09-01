@@ -24,32 +24,30 @@ Mobile React Native app that acts as a share target to intelligently process con
 
 ## Bridge Server
 
-### Environment
-- `CLAUDE_CODE_OAUTH_TOKEN` - From `claude setup-token`
-- `OBSIDIAN_VAULT_PATH` - Local vault path
-- `REDIS_URL` - Session storage (optional, falls back to memory)
+**For detailed technical documentation, see:** [`docs/server-api.md`](docs/server-api.md)
 
-### Key Endpoints (Current)
+The bridge server provides AI-powered chat functionality using AI SDK v5 with Claude Code provider integration. Key features:
+
+- **Direct streaming**: Real-time AI responses via Server-Sent Events
+- **Session persistence**: Redis-backed chat history with 24h TTL
+- **Vault integration**: Claude Code CLI operates in actual Obsidian vault
+- **Performance-first**: Streaming prioritized, persistence happens async
+
+### Quick Reference
 ```bash
-# Health & Status
-GET  /health                     → {"status":"healthy","version":"2.0.0"}
+# Main chat endpoint
+POST /api/chat                  → AI SDK v5 streaming + session persistence
 
-# Chat Management  
-GET  /api/chats                  → List all chat sessions
-POST /api/chats                  → Create new chat session
-GET  /api/chats/:id/messages     → Load chat history
-DELETE /api/chats/:id           → Delete chat session
+# Session management
+GET  /api/chats                 → List all chat sessions
+POST /api/chats                 → Create new chat session
+DELETE /api/chats/:id          → Delete chat session
 
-# AI Streaming (Core)
-POST /api/chat?chatId=<id>      → AI SDK v5 streaming + session persistence
+# Environment setup
+CLAUDE_CODE_OAUTH_TOKEN        # From `claude setup-token`  
+OBSIDIAN_VAULT_PATH           # Local vault directory
+REDIS_URL                     # Optional, falls back to memory
 ```
-
-### Claude CLI Integration
-Server spawns Claude Code CLI with:
-- Working directory: `OBSIDIAN_VAULT_PATH`
-- Context: Vault's `CLAUDE.md` with routing rules
-- Model: Sonnet for implementation
-- Stream parsing for proposals + real-time tokens
 
 ## React Native App
 
