@@ -354,7 +354,7 @@ The testing session demonstrated:
 **Result:** Web prototype validated as production-ready multilingual Obsidian vault assistant.
 
 ### Phase 3.9 Completed Tasks ✅
-- ✅ **SSH tunnel functionality with tool calls** - Verified tool operations work reliably over tunnel
+- ✅ **SSH tunnel functionality with tool calls** - Verified tool operations execute reliably over tunnel (backend only)
 - ✅ **Development modes system** - Implemented smart local/tunnel mode detection with health checks
 - ✅ **Flexible development workflow** - `pnpm run dev:local` and `pnpm run dev:tunnel` with auto-detection
 
@@ -363,7 +363,7 @@ UX improvements for enhanced user experience:
 
 1. **💬 Implement multiple chat sessions with history** - Add session management and conversation persistence  
 2. **👤 Add custom user avatar and improve Claude avatar** - Replace generic avatars with proper user/Claude icons
-3. **🛠️ Implement tool call visualization in chat interface** - Better UI feedback for Read/Write/Edit operations
+3. **🛠️ Implement tool call visualization in chat interface** - **CRITICAL**: Tool calls execute but are invisible to users
 
 **Status:** Core functionality + development workflow complete. Focus on UX polish.
 
