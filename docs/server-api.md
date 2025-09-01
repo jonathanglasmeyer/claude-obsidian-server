@@ -98,13 +98,61 @@ extractDeltaFromChunk(chunk) → string | null
 ## Data Flow
 
 ```
-1. Client POST /api/chat
-2. index.js validates request
-3. createClaudeProvider() configures AI SDK
-4. streamText() starts Claude Code session  
-5. Stream chunks → extractDeltaFromChunk()
-6. SessionStore persists conversation
-7. Server-sent events → Client
+┌─────────────┐    POST /api/chat     ┌─────────────────┐
+│   Client    │ ─────────────────────→ │   index.js      │
+│ (Browser)   │                       │ (Express Server)│
+└─────────────┘                       └─────────────────┘
+       ↑                                       │
+       │                               ┌───────┴────────┐
+       │                               │  Validate &    │
+       │                               │  Extract Data  │
+       │                               └───────┬────────┘
+       │                                       │
+       │                               ┌───────▼────────┐
+       │                               │ createClaudeProvider()
+       │                               │ (claude-provider.js)
+       │                               └───────┬────────┘
+       │                                       │
+       │                               ┌───────▼────────┐
+       │                               │   streamText() │
+       │                               │   AI SDK v5    │
+       │                               └───────┬────────┘
+       │                                       │
+       │                               ┌───────▼────────┐
+       │                               │ Claude Code CLI │
+       │                               │ (Obsidian Vault)│
+       │                               └───────┬────────┘
+       │                                       │
+       │                                 Stream Chunks
+       │                                       │
+       │                               ┌───────▼────────┐
+       │                               │extractDeltaFromChunk()
+       │                               │(delta-extractor.js)
+       │                               └───────┬────────┘
+       │                                       │
+       │    Server-Sent Events          ┌─────▼─────┐
+       │ ◄─────────────────────────────  │SessionStore│
+       │                               │(Redis/Mem) │
+       │                               │   Persist   │
+       │                               └─────────────┘
+       │
+   ┌───▼────┐
+   │ Real-  │
+   │ time   │
+   │ Chat   │
+   │ UI     │
+   └────────┘
+
+Session Management Flow:
+┌─────────────┐    GET /api/chats     ┌─────────────────┐
+│   Client    │ ─────────────────────→ │   index.js      │
+└─────────────┘                       └─────────┬───────┘
+       ↑                                       │
+       │                               ┌───────▼────────┐
+       │ ◄───────────────────────────── │  SessionStore  │
+       │      Chat List/History        │   .listChats() │
+       │                               │   .getChat()   │
+                                       └────────────────┘
 ```
 
 ## Environment Variables
