@@ -5,10 +5,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { messages } = body;
     
-    // Both frontend and backend use AI SDK v5 format - no conversion needed
-    console.log('Frontend messages:', JSON.stringify(messages, null, 2));
+    // Always connect to localhost:3001 - either SSH tunnel or local server
+    const apiUrl = 'http://localhost:3001/api/ai-chat';
+    console.log('🔗 Connecting to bridge server at localhost:3001');
     
-    const response = await fetch('http://localhost:3001/api/ai-chat', {
+    console.log('Frontend messages:', JSON.stringify(messages, null, 2));
+    console.log(`Connecting to: ${apiUrl}`);
+    
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages }),

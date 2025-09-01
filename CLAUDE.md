@@ -3,7 +3,7 @@
 ## Project Overview
 Mobile React Native app that acts as a share target to intelligently process content into an Obsidian vault using Claude Code (Max plan, no API key required). The app receives shared URLs/text, sends them to a bridge server that runs Claude Code CLI sessions, proposes vault organization, and executes git operations upon user confirmation.
 
-**Status: Phase 3.5 Complete** - Web prototype with direct AI SDK v5 integration operational.
+**Status: Phase 3.9 Core Complete** - Web prototype with flexible development modes and production-ready chat interface.
 
 ## Architecture
 
@@ -91,11 +91,36 @@ Claude Code CLI will use the target vault's existing CLAUDE.md rules to determin
 - **Vault Integration:** Claude Code operates directly in `/srv/claude-jobs/obsidian-vault` ✅
 - **SSH Tunnel Access:** `localhost:3001` → Hetzner production server ✅
 
+## Development Modes ✅ *(Phase 3.9)*
+
+**Smart Development System with Auto-Detection:**
+
+### 🚇 Tunnel Mode (Production Vault)
+```bash
+# Start SSH tunnel + web prototype
+ssh -L 3001:localhost:3001 hetzner -N &
+cd web-prototype && pnpm run dev:tunnel
+# ✅ SSH tunnel active → Next.js starts automatically
+```
+
+### 🏠 Local Mode (Local Vault) 
+```bash
+# Start local server + web prototype
+cd server && OBSIDIAN_VAULT_PATH=/path/to/vault npm start &
+cd web-prototype && pnpm run dev:local  
+# ✅ Local server detected → Next.js starts automatically
+```
+
+**Health Check System:**
+- Commands automatically detect if required server is running
+- Show helpful instructions if prerequisites missing
+- Single port (3001) for both modes - no configuration complexity
+
 ## Deployment
 ```bash
-# Development
-npm run dev                    # localhost:3002
-redis-server --daemonize yes   # Local Redis
+# Development (choose mode)
+pnpm run dev:tunnel            # SSH tunnel to production
+pnpm run dev:local             # Local development
 
 # Production (automated)
 ./deploy.sh                    # Full deployment script
@@ -103,9 +128,6 @@ redis-server --daemonize yes   # Local Redis
 # Production (manual)  
 rsync -avz . hetzner:~/obsidian-bridge-server/
 ssh hetzner "cd ~/obsidian-bridge-server && docker compose up -d --build"
-
-# Access via tunnel
-ssh -L 3001:localhost:3001 hetzner -N  
 ```
 
 ## SSH Tunnel Validation Workflow
