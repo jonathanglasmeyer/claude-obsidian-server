@@ -26,41 +26,11 @@ export default function Home() {
   });
 
 
-  const [debugResponse, setDebugResponse] = useState('');
-  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Form submitted!', { input, messagesLength: messages?.length || 0 });
     
     if (input.trim()) {
-      // Debug: Manual fetch to see raw response
-      console.log('🔍 DEBUG: Making manual request...');
-      fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          messages: [{ role: 'user', content: [{ type: 'text', text: input }] }] 
-        })
-      }).then(async (response) => {
-        console.log('🔍 DEBUG: Response received', response.status);
-        const reader = response.body?.getReader();
-        if (reader) {
-          let result = '';
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            const chunk = new TextDecoder().decode(value);
-            result += chunk;
-            console.log('🔍 DEBUG: Raw chunk:', JSON.stringify(chunk));
-          }
-          console.log('🔍 DEBUG: Full response:', result);
-          setDebugResponse(result);
-        }
-      }).catch(err => {
-        console.error('🔍 DEBUG: Error:', err);
-      });
-      
-      // Also try useChat
       sendMessage({ text: input });
       setInput('');
     }
@@ -99,14 +69,6 @@ export default function Home() {
         <br />Messages: {messages?.length || 0}
         <br />Input: "{input || ''}"
         <br />Loading: {String(isLoading || false)}
-        {debugResponse && (
-          <div style={{marginTop: '10px'}}>
-            <strong>Raw Response:</strong>
-            <pre style={{fontSize: '12px', background: '#eee', padding: '5px'}}>
-              {debugResponse}
-            </pre>
-          </div>
-        )}
       </div>
     </div>
   );
