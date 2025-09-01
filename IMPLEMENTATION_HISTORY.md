@@ -579,3 +579,61 @@ return match[1]
 - **Vault Integration**: Full Claude Code CLI integration with CLAUDE.md rules
 - **Architecture**: Pure AI SDK v5 pipeline end-to-end
 - **Testing**: Comprehensive multilingual validation completed
+
+---
+
+## Phase 3.11: Explicit Server Mode Configuration ✅ **COMPLETE**
+**Date**: 2025-09-01  
+**Goal**: Enable explicit LOCAL vs SSH tunnel mode selection for web prototype
+
+### Problem
+- Web prototype always connected to localhost:3000 (local server)
+- SSH tunnel testing required manual code changes
+- No visual indication of which backend was being used
+- Mixed local/production data caused confusion during testing
+
+### Solution: Explicit Mode Configuration ✅
+
+#### 1. Environment Variable Control
+```typescript
+const isLocalMode = process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SERVER_MODE === 'local';
+const apiUrl = isLocalMode ? 'http://localhost:3000/api/chat' : 'http://localhost:3001/api/chat';
+```
+
+#### 2. Package.json Scripts
+```json
+{
+  "dev:local": "NEXT_PUBLIC_SERVER_MODE=local next dev --port 3002",
+  "dev:tunnel": "next dev --port 3002"
+}
+```
+
+#### 3. Visual Server Mode Badge
+- Green "LOCAL" badge → Local server (port 3000)
+- Blue "SSH" badge → Production via SSH tunnel (port 3001)
+- Positioned top-right corner for clear visibility
+
+#### 4. All API Endpoints Updated
+- `/api/chat/route.ts`
+- `/api/chats/route.ts` 
+- `/api/chats/[id]/route.ts`
+- `/api/chats/[id]/messages/route.ts`
+
+### Implementation ✅ **COMPLETE**
+- ✅ **Environment detection**: All API routes respect `NEXT_PUBLIC_SERVER_MODE`
+- ✅ **Visual feedback**: Server mode badge with color coding
+- ✅ **Package scripts**: `dev:local` and `dev:tunnel` commands
+- ✅ **Production deployment**: Updated production server to v2.0.0
+- ✅ **SSH tunnel validation**: Confirmed different Redis data sources
+
+### Usage
+```bash
+# Local development (green badge)
+pnpm run dev:local
+
+# SSH tunnel testing (blue badge)  
+pnpm run dev:tunnel
+```
+
+### Technical Achievement
+Explicit over implicit configuration - no more guessing which backend is active. Clean separation between local development and production testing environments.

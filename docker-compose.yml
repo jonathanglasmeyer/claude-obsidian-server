@@ -30,7 +30,7 @@ services:
       - redis
     volumes:
       - /srv/claude-jobs:/srv/claude-jobs:rw
-      - /home/claude/.ssh:/home/claude/.ssh:ro
+      - /home/claude/.ssh:/home/node/.ssh:ro
     networks:
       - obsidian-net
 

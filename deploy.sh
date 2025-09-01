@@ -41,6 +41,8 @@ remote_cmd "cd $REMOTE_PATH && \
     docker compose down || true && \
     echo '🚀 Starting services...' && \
     docker compose up -d --build && \
+    echo '🔧 Fixing vault permissions for container UID mapping...' && \
+    chown -R 1000:1000 /srv/claude-jobs/obsidian-vault && \
     echo '⏳ Waiting for services to be ready...' && \
     sleep 10 && \
     echo '🩺 Checking service health...' && \
