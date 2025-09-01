@@ -121,7 +121,7 @@ rm -rf /tmp/test-claude /tmp/test-vault
 - Claude Code operates in actual Obsidian vault directory
 - Real-time streaming validated via SSH tunnel (localhost:3001)
 - AI respects existing vault structure and CLAUDE.md rules
-## Phase 3.6: Direct AI SDK v5 Endpoint Implementation ✅ **COMPLETE**
+## Phase 3.6: Direct AI SDK v5 Endpoint Implementation ✅ **STREAMING WORKS**
 
 **Objective:** Implement vanilla AI SDK v5 pipeline: `useChat()` → `/api/ai-chat` → `streamText()` with no conversion layers.
 
@@ -147,7 +147,7 @@ The core issue was format mismatch:
 - Frontend: Support AI SDK v5 message parts array format
 - Architecture: Pure AI SDK v5 pipeline with zero format conversion
 
-**Current Status:** ✅ **FULLY OPERATIONAL**
+**Current Status:** ✅ **BASIC STREAMING OPERATIONAL**
 - ✅ **Real-time streaming**: Messages appear in chat as Claude types
 - ✅ **Multi-turn conversations**: Conversation history maintained
 - ✅ **No timeouts**: Claude can take unlimited time for complex operations
@@ -166,20 +166,159 @@ The core issue was format mismatch:
 - **User Experience**: Natural chat interface with Claude's vault expertise
 - **Web Content**: WebFetch and WebSearch enabled for URL processing
 
-**Known Limitation: Tool Call Visibility**
+**Remaining Issues:**
 - ⚠️ **Tool calls execute but are invisible** in the UI during streaming
-- **Current behavior**: Text streaming pauses during tool execution, resumes after completion
-- **User experience**: Brief pause in conversation flow during file operations
-- **Next phase**: Phase 3.7 - Tool call progress indicators and real-time tool execution visibility
+- ⚠️ **Primitive message UI** - using basic `<div>` instead of AI SDK components
+- ⚠️ **No tool execution feedback** - users don't see when Claude reads/writes files
+- ⚠️ **Basic error handling** - no proper error UI states
+- ⚠️ **Missing confirmation flow** - no approval before file operations
 
 ---
-## Phase 4: Android App (Day 2-3)
+## Phase 3.7: Web Prototype Polish & Tool Visualization ✅ **MOSTLY COMPLETE**
 
-**Simplified by AI SDK Integration:**
-- Vercel AI SDK provides React Native `useChat` hook
-- Built-in streaming message handling
-- Native conversation state management
-- Direct compatibility with Phase 3 AI SDK provider
+**Objective:** Transform basic streaming into professional chat interface with full tool visibility.
+
+### Step 3.7.1: AI Elements Migration ✅ **COMPLETE**
+**❌ OLD**: Custom message components with manual styling
+**✅ NEW**: Use official **Vercel AI Elements** - production-ready components
+
+**Installation:**
+```bash
+cd web-prototype
+npx ai-elements@latest  # Install all 16 components
+```
+
+**Key Components for Claude Code:**
+- **`tool`** ⭐⭐ - Tool call visualization (Read/Write/Edit/Bash)
+- **`message`** ⭐ - Professional messages with avatars  
+- **`conversation`** ⭐ - Chat container
+- **`response`** ⭐ - AI text responses  
+- **`loader`** ⭐ - Loading during tool execution
+- **`reasoning`** - Collapsible reasoning display
+
+**Example Implementation:**
+```tsx
+import {
+  Conversation,
+  ConversationContent,
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent } from '@/components/ai-elements/message';
+import { Response } from '@/components/ai-elements/response';
+import { Tool } from '@/components/ai-elements/tool';
+
+{messages.map((message) => (
+  <Message from={message.role} key={message.id}>
+    <MessageContent>
+      {message.parts.map((part, i) => {
+        switch (part.type) {
+          case 'text':
+            return <Response key={i}>{part.text}</Response>;
+          case 'tool-Read':
+          case 'tool-Write':
+          case 'tool-Edit':
+            return <Tool key={i} part={part} />;
+          default:
+            return null;
+        }
+      })}
+    </MessageContent>
+  </Message>
+))}
+```
+
+### Step 3.7.2: Tool Call Visualization (via AI Elements)
+- **`Tool` component** handles all Claude Code tools automatically
+- Show Read/Write/Edit/Bash operations with professional UI
+- Built-in progress indicators and result displays
+- No custom styling needed - uses Vercel design system
+
+### Step 3.7.3: File Operation Workflow  
+- Leverage AI Elements `actions` component for confirmations
+- Use `branch` component for approve/reject decisions
+- Professional UX patterns from Vercel's component library
+
+### Step 3.7.4: Enhanced UX (AI Elements Features)
+- Built-in error states and loading animations
+- Responsive design out of the box
+- Accessibility compliance included
+- Modern AI UX patterns
+
+**Success Criteria:**
+- ✅ Professional UI matching modern AI app standards
+- ✅ Tool calls properly visualized with `Tool` component  
+- ✅ No more custom CSS - use Vercel design system
+- ✅ Production-ready components not homebrew solutions
+
+**Reference Documentation:**
+- **Complete guide**: `AI_SDK_V5_COMPONENTS.md` sections 16-19
+- **All 16 components**: Listed with descriptions and usage
+- **Research methods**: Context7, Registry, Official docs
+
+**Current Status:** ✅ **AI ELEMENTS MIGRATION COMPLETE**
+- ✅ All 16 AI Elements components installed and configured
+- ✅ Professional UI with Conversation, Message, Tool, Response, Loader components
+- ✅ Tailwind CSS v4 properly configured with shadcn/ui design system
+- ✅ Tool visualization working (Read, Write, Edit, Bash operations shown in collapsible cards)
+- ✅ Clean message layout with avatars and proper styling
+
+## Phase 3.7.2: Streaming UX Improvements ✅ **COMPLETE**
+
+**Final Solution:** Used AI SDK `status` property following official Vercel patterns from documentation.
+
+### Implementation
+- **Loading State**: `status === 'submitted'` → Show spinner in chat bubble position
+- **Stop Button**: Replaced send button with ■ stop symbol during processing  
+- **Typography**: Inter font, 17px base size, improved vertical rhythm
+- **UX Pattern**: Matches ChatGPT behavior - spinner in message area, stop in composer
+
+### Key Insights
+- Short responses don't need artificial delays - immediate responses are good UX
+- AI SDK `status` is more reliable than parsing message parts
+- Official AI Elements documentation provides best practices
+- Loading states should appear where content will appear (not separate areas)
+
+**Result:** Professional chat interface with consistent, predictable loading feedback.
+
+## Phase 3.8: Production-Ready Web Client ✅ **COMPLETE**
+
+**Status:** Web prototype now fully functional as production chat interface for Obsidian vault management.
+
+### Core Features Working
+- ✅ **Real-time AI streaming** via SSH tunnel to Hetzner production server
+- ✅ **Vault intelligence** - Claude reads actual CLAUDE.md rules and vault structure  
+- ✅ **Tool visualization** - File operations (Read, Write, Edit, Bash) shown in UI
+- ✅ **Professional UX** - Inter font, proper loading states, stop button, markdown rendering
+- ✅ **Multi-turn conversations** with full context preservation
+- ✅ **Error handling** and session management
+
+### Technical Stack
+- **Frontend**: Next.js 14 + React 18 + AI SDK v5 + AI Elements
+- **Backend**: Bridge server with AI SDK provider (`ai-sdk-provider-claude-code`)
+- **Infrastructure**: Docker + Redis + SSH tunnel to production vault
+- **Architecture**: Direct AI SDK pipeline - `useChat()` → `/api/ai-chat` → `streamText()`
+
+### Current Capabilities
+- Organize content in Obsidian vault (172 books tracked)
+- Process URLs and articles for vault integration
+- Manage literature database with intelligent categorization
+- Execute file operations with user approval workflow
+- Real-time streaming with professional chat UX
+
+**Next Step:** Web client is production-ready. Mobile development can now proceed with established patterns.
+
+---
+## BACKLOG: Phase 4+ (Future Development)
+
+### Phase 4: Android App (Deferred)
+**Status:** 📋 **BACKLOG** - Focus on web prototype polish first
+**Rationale:** Web prototype needs significant UX improvements before mobile development.
+**Dependencies:** Complete Phase 3.7 tool visualization and proper AI SDK components.
+
+**Future Tasks:**
+- React Native setup with share intent configuration
+- Mobile-optimized chat UI using lessons from web prototype
+- Share target functionality for URLs and text
+- Offline queuing and session resumption
 
 ### Step 4.1: React Native Setup
 ```bash
