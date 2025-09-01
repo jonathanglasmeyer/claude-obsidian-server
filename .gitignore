@@ -33,3 +33,6 @@ Thumbs.db
 # Build outputs
 dist/
 build/
+
+# Redis data files
+*.rdb
