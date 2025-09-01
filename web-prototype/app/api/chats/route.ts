@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 
-const BACKEND_URL = 'http://localhost:3000';
+const isLocalMode = process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SERVER_MODE === 'local';
+const BACKEND_URL = isLocalMode ? 'http://localhost:3000' : 'http://localhost:3001';
 
 export async function GET(req: NextRequest) {
   try {

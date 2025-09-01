@@ -74,8 +74,22 @@ export default function Home() {
     );
   }
 
+  // Check server mode for badge
+  const serverMode = process.env.NEXT_PUBLIC_SERVER_MODE === 'local' ? 'LOCAL' : 'SSH';
+
   return (
-    <div className="h-screen flex">
+    <div className="h-screen flex relative">
+      {/* Server Mode Badge - Top Right */}
+      <div className="absolute top-2 right-2 z-50">
+        <span className={`px-2 py-1 text-xs font-mono rounded ${
+          serverMode === 'LOCAL' 
+            ? 'bg-green-100 text-green-800 border border-green-200' 
+            : 'bg-blue-100 text-blue-800 border border-blue-200'
+        }`}>
+          {serverMode}
+        </span>
+      </div>
+
       {/* Session Sidebar */}
       <SessionSidebar
         sessions={sessions}

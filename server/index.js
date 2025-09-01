@@ -90,6 +90,7 @@ app.post('/api/chat', async (req, res) => {
       model: claudeProvider,
       messages: coreMessages,
       maxTokens: 4000,
+      tools: {}, // Enable tool calling (Claude Code provider handles tool registration)
     });
 
     // Use simple AI SDK UI Message Stream Response (like working version)

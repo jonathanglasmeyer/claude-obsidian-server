@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev --port 3002",
-    "dev:local": "curl -f http://localhost:3001/health >/dev/null 2>&1 && echo '✅ Local server detected' || echo '❌ Start local server: cd server && OBSIDIAN_VAULT_PATH=/path/to/vault npm start' && next dev --port 3002",
-    "dev:tunnel": "curl -f http://localhost:3001/health >/dev/null 2>&1 && echo '✅ SSH tunnel active' || echo '❌ Start SSH tunnel: ssh -L 3001:localhost:3001 hetzner -N' && next dev --port 3002",
+    "dev:local": "NEXT_PUBLIC_SERVER_MODE=local next dev --port 3002",
+    "dev:tunnel": "next dev --port 3002",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

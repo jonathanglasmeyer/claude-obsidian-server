@@ -10,9 +10,12 @@ export async function POST(req: NextRequest) {
     const queryChatId = searchParams.get('chatId') === 'new' ? null : searchParams.get('chatId');
     const chatId = bodyChatId || queryChatId;
     
-    // Connect to new server running on localhost:3000
-    const apiUrl = 'http://localhost:3000/api/chat';
-    console.log('🔗 Connecting to bridge server v2.0 at localhost:3000');
+    // Explicit mode selection via environment variable
+    const isLocalMode = process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SERVER_MODE === 'local';
+    const apiUrl = isLocalMode ? 'http://localhost:3000/api/chat' : 'http://localhost:3001/api/chat';
+    const serverType = isLocalMode ? 'LOCAL' : 'SSH';
+    
+    console.log(`🔗 Connecting to ${serverType} server at ${apiUrl}`);
     
     console.log('Frontend messages:', messages.length, 'messages');
     console.log('Frontend chatId (from query):', queryChatId);
