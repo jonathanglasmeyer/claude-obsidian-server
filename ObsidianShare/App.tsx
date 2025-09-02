@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
+import { fetch as expoFetch } from 'expo/fetch';
 import { 
   useSessions
 } from '@obsidian-bridge/shared-components';
+import { ErrorBoundary, ChatErrorFallback } from './ErrorBoundary';
 
 // Modern ChatGPT-style message bubbles
 function MessageBubble({ role, children }) {
@@ -67,6 +69,7 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
   console.log('💬 ChatComponent render - sessionId:', sessionId, 'loadSessionMessages:', typeof loadSessionMessages);
   
   const [inputText, setInputText] = useState('');
+  const [chatError, setChatError] = useState(null);
   
   const sessionConfig = {
     apiBaseUrl: 'http://192.168.178.147:3001', // Use localhost for local development testing
@@ -82,59 +85,61 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
     console.log('🔄 Updated currentSessionIdRef to:', sessionId);
   }, [sessionId]);
 
-  // ✅ AI SDK v5: useChat with session-specific key (like Web Prototype)
-  const { 
-    messages, 
-    sendMessage, 
-    isLoading: chatLoading, 
-    status, 
-    error, 
-    reload, 
-    stop, 
-    setMessages 
-  } = useChat({
-    key: sessionId, // 🔑 Force recreation when sessionId changes
+  // ✅ Official AI SDK with proper React Native transport  
+  const chatHook = useChat({
+    // Option 1: Custom transport with expo/fetch (RECOMMENDED)
     transport: new DefaultChatTransport({
+      fetch: expoFetch as unknown as typeof globalThis.fetch,
       api: 'http://192.168.178.147:3001/api/chat',
-      body: () => {
-        console.log('🚀 Transport body function called - sessionId:', currentSessionIdRef.current);
-        return {
-          chatId: currentSessionIdRef.current, // Dynamic chatId evaluation per request
-        };
-      },
     }),
-    initialMessages: [], // Will be loaded via useEffect
+    
+    // Session configuration
+    id: sessionId,
+    initialMessages: [],
+    body: {
+      chatId: sessionId, // Pass sessionId to server
+    },
     onError: (error) => {
-      console.error('useChat error:', error);
+      console.error('🚨 useChat error:', error);
+      setChatError(error);
     },
     onFinish: (message) => {
       console.log('🎯 onFinish called for sessionId:', sessionId, message);
+      setChatError(null);
     }
   });
   
-  // Load session messages when sessionId changes (same as web prototype)
+  console.log('🔍 useChat hook debug:', Object.keys(chatHook));
+  console.log('🔍 Available functions:', {
+    messages: !!chatHook.messages,
+    sendMessage: typeof chatHook.sendMessage,
+    status: chatHook.status,
+    error: !!chatHook.error
+  });
+  
+  const { 
+    messages, 
+    sendMessage,
+    status,
+    error,
+    setMessages 
+  } = chatHook;
+  
+  // Load session messages when component mounts (same as web prototype)
   useEffect(() => {
-    if (!sessionId) return;
-    
     const controller = new AbortController();
     
     const loadMessages = async () => {
-      console.log('📥 Loading messages for sessionId:', sessionId, 'loadSessionMessages type:', typeof loadSessionMessages);
-      
-      if (!loadSessionMessages) {
-        console.error('❌ loadSessionMessages is not available');
-        setMessages([]);
-        return;
-      }
+      console.log('📥 Loading messages for sessionId:', sessionId);
       
       try {
-        const sessionMessages = await loadSessionMessages(sessionId);
+        const messages = await loadSessionMessages(sessionId);
         
         if (!controller.signal.aborted) {
-          // Force unique IDs for all messages to fix React key duplication
-          const messagesWithIds = sessionMessages.map((msg, index) => ({
+          // Add IDs to messages if they don't have them (like web prototype)
+          const messagesWithIds = messages.map((msg, index) => ({
             ...msg,
-            id: `msg-${sessionId}-${index}-${msg.role}-${(msg.content || '').slice(0, 10).replace(/[^a-zA-Z0-9]/g, '')}-${Date.now()}`,
+            id: msg.id || `${sessionId}-${index}-${Date.now()}`,
           }));
           console.log('✅ Loaded', messagesWithIds.length, 'messages, setting to useChat');
           setMessages([...messagesWithIds]);
@@ -152,10 +157,46 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
     return () => {
       controller.abort();
     };
-  }, [sessionId, loadSessionMessages, setMessages]);
+  }, []); // Only run once on mount - sessionId is stable due to key={sessionId}
 
   return (
     <>
+      {/* Error Display */}
+      {chatError && (
+        <View style={{ 
+          margin: 16, 
+          padding: 12, 
+          backgroundColor: '#fef2f2', 
+          borderRadius: 8, 
+          borderWidth: 1, 
+          borderColor: '#fecaca' 
+        }}>
+          <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#dc2626', marginBottom: 4 }}>
+            🚨 Chat Error
+          </Text>
+          <Text style={{ fontSize: 14, color: '#b91c1c' }}>
+            {chatError.message}
+          </Text>
+          {chatError.message.includes('structuredClone') && (
+            <Text style={{ fontSize: 12, color: '#7f1d1d', fontStyle: 'italic', marginTop: 4 }}>
+              💡 React Native compatibility issue detected
+            </Text>
+          )}
+          <TouchableOpacity 
+            style={{ 
+              marginTop: 8, 
+              backgroundColor: '#dc2626', 
+              paddingHorizontal: 12, 
+              paddingVertical: 6, 
+              borderRadius: 4 
+            }}
+            onPress={() => setChatError(null)}
+          >
+            <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>Dismiss</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Messages */}
       <ScrollView 
         style={{ flex: 1, zIndex: 1, backgroundColor: '#fff' }} 
@@ -164,14 +205,23 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
         <Text style={{ color: '#999', padding: 16 }}>Messages count: {messages.length}</Text>
         {messages.map((message, index) => (
           <MessageBubble key={message.id || index} role={message.role}>
-            {message.content}
+            {message.parts?.map(part => part.text || (typeof part === 'string' ? part : '')).join('') || ''}
           </MessageBubble>
         ))}
         
         {/* Loading indicator */}
-        {(status === 'submitted' || status === 'streaming') && (
+        {(status === 'streaming' || status === 'submitted') && (
           <MessageBubble role="assistant">
             <Text style={{ fontStyle: 'italic', color: '#666' }}>Typing...</Text>
+          </MessageBubble>
+        )}
+        
+        {/* Error indicator in chat */}
+        {chatError && (
+          <MessageBubble role="assistant">
+            <Text style={{ fontStyle: 'italic', color: '#dc2626' }}>
+              ❌ Error: {chatError.message}
+            </Text>
           </MessageBubble>
         )}
       </ScrollView>
@@ -222,16 +272,27 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
               alignItems: 'center',
               justifyContent: 'center',
             }}
-            disabled={status === 'submitted' || status === 'streaming'}
-            onPress={() => {
-              if (status === 'submitted' || status === 'streaming') {
-                return;
-              }
+            disabled={status === 'streaming' || status === 'submitted'}
+            onPress={async () => {
+              if (status === 'streaming' || status === 'submitted') return;
               
               if (inputText.trim()) {
                 console.log('📤 Sending message to sessionId:', sessionId);
-                sendMessage({ text: inputText });
-                setInputText('');
+                console.log('📤 sendMessage type:', typeof sendMessage);
+                console.log('📤 Attempting to send:', inputText);
+                
+                try {
+                  if (sendMessage) {
+                    // Use React Native AI SDK pattern
+                    await sendMessage({ text: inputText });
+                    console.log('✅ Message sent successfully');
+                    setInputText('');
+                  } else {
+                    console.error('❌ sendMessage is not available');
+                  }
+                } catch (error) {
+                  console.error('❌ Error sending message:', error);
+                }
               }
             }}
           >
@@ -375,13 +436,14 @@ export default function App() {
         </View>
 
         {/* 🔑 KEY: ChatComponent with session-specific key (like Web Prototype) */}
-        <Text style={{ color: 'red', padding: 16 }}>About to render ChatComponent for session: {activeSessionId}</Text>
-        <ChatComponent 
-          key={activeSessionId} // Force new component instance per session
-          sessionId={activeSessionId}
-          activeSession={activeSession}
-          loadSessionMessages={loadSessionMessages}
-        />
+        <ErrorBoundary fallback={ChatErrorFallback}>
+          <ChatComponent 
+            key={activeSessionId} // Force new component instance per session
+            sessionId={activeSessionId}
+            activeSession={activeSession}
+            loadSessionMessages={loadSessionMessages}
+          />
+        </ErrorBoundary>
       </SafeAreaView>
 
       {/* Backdrop */}

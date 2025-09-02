@@ -49,17 +49,25 @@ OBSIDIAN_VAULT_PATH           # Local vault directory
 REDIS_URL                     # Optional, falls back to memory
 ```
 
-## React Native App
+## React Native App (Android-First)
+
+### Target Platform
+- **Primary Target**: Android (Pixel 9)
+- **Share Intent**: Android SEND actions for URLs/text
+- **Architecture**: Expo React Native with custom development build
 
 ### Structure
-- **Share Extension** - iOS/Android share target
-- **StreamingText** - Live Claude response display
+- **Share Extension** - Android Intent Filter for SEND actions  
+- **StreamingText** - Live Claude response display with react-native-vercel-ai
 - **ProposalView** - File preview with confirm/modify actions
-- **API Client** - Connection to bridge server
+- **API Client** - Session-persistent connection to bridge server
 
 ### Platform Integration
-- Android Intent Filter for SEND actions (Pixel 9 target)
-- Session-based API for robustness
+- **Android Intent Filter** for SEND actions (URLs, text content)
+- **Session-based API** for robust message persistence  
+- **Official AI SDK** with React Native polyfills ([Best Practices](./RN_AI_SDK_BEST_PRACTICES.md))
+- **Metro Bundler** with package exports enabled
+- **Custom Development Build** for native features
 
 ## Current Tech Stack
 
@@ -136,6 +144,15 @@ curl -X POST http://localhost:3000/api/chat?chatId=test \
 curl -X POST http://localhost:3000/api/chats \
   -H "Content-Type: application/json" \
   -d '{"title":"Test Chat"}'
+```
+
+### Mobile App Debugging
+```bash
+# Take screenshot from Android emulator for visual debugging
+adb exec-out screencap -p > /tmp/android_screenshot.png
+
+# Then read with Claude Code to see UI state
+# This is THE method to understand visual output on Android
 ```
 
 ## Common Issues & Solutions

@@ -16,6 +16,9 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
+// Enable package exports for react-native-vercel-ai
+config.resolver.unstable_enablePackageExports = true;
+
 // 3. Force Metro to resolve symlinks to their real path
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (moduleName === '@obsidian-bridge/shared-components') {

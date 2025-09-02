@@ -43,10 +43,21 @@ app.get('/', (req, res) => {
   });
 });
 
-// Direct AI SDK v5 chat endpoint (main chat interface)
+// Direct AI SDK v5 chat endpoint (main chat interface)  
 app.post('/api/chat', async (req, res) => {
   try {
-    const { messages, chatId } = req.body;
+    console.log('🔍 Raw request debugging:');
+    console.log('  - Content-Type:', req.headers['content-type']);
+    console.log('  - Body exists:', !!req.body);
+    console.log('  - Body type:', typeof req.body);
+    console.log('  - Body content:', JSON.stringify(req.body, null, 2));
+    
+    // Handle missing body gracefully
+    if (!req.body) {
+      return res.status(400).json({ error: 'Request body is required' });
+    }
+
+    const { messages, id: chatId } = req.body;
     
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: 'Messages array is required' });
@@ -77,13 +88,13 @@ app.post('/api/chat', async (req, res) => {
     // Create Claude provider
     const claudeProvider = createClaudeProvider();
     
-    // Convert UIMessages to CoreMessages format
+    // Convert AI SDK v5 UIMessages to CoreMessages format for Claude API
     const coreMessages = allMessages.map(msg => ({
       role: msg.role,
       content: msg.parts?.map(part => {
         if (part.type === 'text') return part.text;
         return ''; // Handle other part types if needed
-      }).join('') || msg.content || ''
+      }).join('') || ''
     }));
     
     const result = streamText({
@@ -129,9 +140,13 @@ app.post('/api/chat', async (req, res) => {
         if (chatId && assistantMessage) {
           console.log('💾 Saving chat:', chatId, 'after streaming completion');
           // Save the complete conversation including the new assistant message
+          // Use AI SDK v5 parts format
           const finalMessages = [
             ...allMessages,
-            { role: 'assistant', content: assistantMessage }
+            { 
+              role: 'assistant', 
+              parts: [{ type: 'text', text: assistantMessage }] 
+            }
           ];
           console.log('💾 Saving', finalMessages.length, 'total messages');
           await sessionStore.saveChat(chatId, finalMessages);

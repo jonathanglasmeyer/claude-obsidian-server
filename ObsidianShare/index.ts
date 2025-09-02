@@ -1,5 +1,7 @@
-import { registerRootComponent } from 'expo';
+// ✅ CRITICAL: Load polyfills FIRST, before any other imports
+import './polyfills';
 
+import { registerRootComponent } from 'expo';
 import App from './App';
 
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
