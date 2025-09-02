@@ -28,47 +28,57 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Function to load/refresh sessions from backend
+  const refreshSessions = useCallback(async (preserveActiveSession = false) => {
+    try {
+      setIsLoading(true);
+      console.log('🔄 Loading sessions from backend API...');
+      
+      const response = await fetch(`${config.apiBaseUrl}/api/chats`);
+      if (!response.ok) {
+        throw new Error(`Failed to load sessions: ${response.status}`);
+      }
+      
+      const backendSessions = await response.json();
+      console.log('📥 Loaded sessions from backend:', backendSessions.length);
+      
+      // Convert backend format to frontend format
+      const convertedSessions: ChatSession[] = backendSessions.map((session: any) => ({
+        id: session.id,
+        title: session.title,
+        messages: [], // Messages loaded separately when needed
+        createdAt: new Date(session.createdAt),
+        updatedAt: new Date(session.updatedAt),
+        messageCount: session.messageCount || 0,
+      }));
+      
+      setSessions(convertedSessions);
+      
+      // Preserve active session if requested and it still exists
+      if (preserveActiveSession && activeSessionId) {
+        const sessionStillExists = convertedSessions.some(s => s.id === activeSessionId);
+        if (!sessionStillExists) {
+          setActiveSessionId(null);
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to load sessions from backend:', error);
+      // Continue with existing sessions array
+    } finally {
+      setIsLoading(false);
+    }
+  }, [config.apiBaseUrl, activeSessionId]);
+
   // Load sessions from backend API on mount
   useEffect(() => {
     const loadSessions = async () => {
-      try {
-        setIsLoading(true);
-        console.log('🔄 Loading sessions from backend API...');
-        
-        const response = await fetch(`${config.apiBaseUrl}/api/chats`);
-        if (!response.ok) {
-          throw new Error(`Failed to load sessions: ${response.status}`);
-        }
-        
-        const backendSessions = await response.json();
-        console.log('📥 Loaded sessions from backend:', backendSessions.length);
-        
-        // Convert backend format to frontend format
-        const convertedSessions: ChatSession[] = backendSessions.map((session: any) => ({
-          id: session.id,
-          title: session.title,
-          messages: [], // Messages loaded separately when needed
-          createdAt: new Date(session.createdAt),
-          updatedAt: new Date(session.updatedAt),
-          messageCount: session.messageCount || 0,
-        }));
-        
-        setSessions(convertedSessions);
-        
-        // Note: Not auto-selecting any session to always start with welcome screen
-        
-      } catch (error) {
-        console.error('❌ Failed to load sessions from backend:', error);
-        // Continue with empty sessions array
-        setSessions([]);
-      } finally {
-        setIsLoading(false);
-        setIsInitialized(true);
-      }
+      await refreshSessions(false);
+      setIsInitialized(true);
     };
 
     loadSessions();
-  }, [config.apiBaseUrl]);
+  }, [refreshSessions]);
 
   const createSession = useCallback(async (title?: string): Promise<string> => {
     try {
@@ -225,6 +235,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
     deleteSession,
     loadSessionMessages,
     updateSessionMessages,
+    refreshSessions,
     renameSession,
     isInitialized,
     isLoading,

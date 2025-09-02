@@ -21,6 +21,11 @@ interface SideMenuProps {
 }
 
 function generateConversationTitle(session: Session): string {
+  // Use actual session title if it exists and is not the default "New Chat"
+  if (session.title && session.title !== 'New Chat') {
+    return session.title;
+  }
+  
   if (!session || !session.messageCount || session.messageCount === 0) {
     return 'Untitled chat';  // Better than "New Chat" - less confusing
   }

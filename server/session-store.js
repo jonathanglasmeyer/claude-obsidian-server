@@ -150,6 +150,7 @@ class SessionStore {
   }
 
   // Save chat messages (called from onFinish callback)
+  // Returns the updated chat object with the generated title
   async saveChat(chatId, messages) {
     if (this.connected) {
       try {
@@ -175,11 +176,17 @@ class SessionStore {
         chat.messages = messages;
         chat.updatedAt = new Date().toISOString();
         
+        // Update title if it's still the default and we have messages
+        if (chat.title === 'New Chat' && messages.length > 0) {
+          chat.title = this.generateTitleFromMessages(messages);
+          console.log(`🏷️ Auto-generated title for chat ${chatId}: "${chat.title}"`);
+        }
+        
         // Save with extended TTL (24 hours)
         await this.client.setEx(`chat:${chatId}`, 86400, JSON.stringify(chat));
         
         console.log(`💾 Saved chat ${chatId} with ${messages.length} messages`);
-        return true;
+        return chat; // Return the full chat object with updated title
       } catch (error) {
         console.error('Error saving chat to Redis:', error);
         return false;
@@ -199,10 +206,17 @@ class SessionStore {
       
       chat.messages = messages;
       chat.updatedAt = new Date().toISOString();
+      
+      // Update title if it's still the default and we have messages
+      if (chat.title === 'New Chat' && messages.length > 0) {
+        chat.title = this.generateTitleFromMessages(messages);
+        console.log(`🏷️ Auto-generated title for chat ${chatId}: "${chat.title}" (memory)`);
+      }
+      
       this.memoryChats.set(chatId, chat);
       
       console.log(`💾 Saved chat ${chatId} with ${messages.length} messages (memory)`);
-      return true;
+      return chat; // Return the full chat object with updated title
     }
   }
 

@@ -134,7 +134,7 @@ app.post('/api/chat', async (req, res) => {
             }
           ];
           console.log('💾 Saving', finalMessages.length, 'total messages');
-          await sessionStore.saveChat(chatId, finalMessages);
+          const updatedChat = await sessionStore.saveChat(chatId, finalMessages);
         }
       } catch (error) {
         console.error('❌ Streaming error:', error);

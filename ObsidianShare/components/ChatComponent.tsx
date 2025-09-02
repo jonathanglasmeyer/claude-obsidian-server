@@ -12,12 +12,13 @@ interface ChatComponentProps {
   sessionId: string;
   activeSession: any;
   loadSessionMessages: (sessionId: string) => Promise<any[]>;
+  updateSessionMessages: (sessionId: string, messages: any[]) => void;
+  renameSession: (sessionId: string, title: string) => void;
   pendingFirstMessage?: string | null;
   onFirstMessageSent?: () => void;
-  onUpdateChatTitle?: (sessionId: string, title: string) => void;
 }
 
-export function ChatComponent({ sessionId, activeSession, loadSessionMessages, pendingFirstMessage, onFirstMessageSent, onUpdateChatTitle }: ChatComponentProps) {
+export function ChatComponent({ sessionId, activeSession, loadSessionMessages, updateSessionMessages, renameSession, pendingFirstMessage, onFirstMessageSent }: ChatComponentProps) {
   console.log('💬 ChatComponent render - sessionId:', sessionId, 'loadSessionMessages:', typeof loadSessionMessages);
   
   const [chatError, setChatError] = useState(null);
@@ -50,24 +51,44 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, p
       console.error('🚨 useChat error:', error);
       setChatError(error);
     },
-    onFinish: (message) => {
+    onFinish: async (message) => {
       console.log('🎯 onFinish called for sessionId:', sessionId, message);
       setChatError(null);
+      
+      // Update session messages count immediately after message completion
+      if (message.messages && updateSessionMessages) {
+        console.log('📊 Updating session messages count to:', message.messages.length);
+        updateSessionMessages(sessionId, message.messages);
+      }
       
       // Clear pending first message after successful completion
       if (pendingFirstMessage) {
         console.log('✅ Clearing pendingFirstMessage after successful completion');
         
-        // Generate chat title from first message (max 30 chars, clean up)
-        const newTitle = pendingFirstMessage
-          .trim()
-          .slice(0, 30)
-          .replace(/\s+/g, ' ') // normalize whitespace
-          .trim();
-        
-        if (newTitle && onUpdateChatTitle) {
-          console.log('🏷️ Auto-generating chat title:', newTitle);
-          onUpdateChatTitle(sessionId, newTitle);
+        // Only fetch title if we don't have one yet (title is still "New Chat")
+        if (activeSession && activeSession.title === 'New Chat') {
+          console.log('🎯 First message stream complete, fetching title from backend');
+          
+          const fetchTitle = async () => {
+            try {
+              const response = await fetch(`${sessionConfig.apiBaseUrl}/api/chats`);
+              const sessions = await response.json();
+              const currentSession = sessions.find(s => s.id === sessionId);
+              
+              if (currentSession && currentSession.title !== 'New Chat') {
+                console.log('✅ Got backend title:', currentSession.title);
+                renameSession(sessionId, currentSession.title);
+              } else {
+                console.log('⚠️ Backend title still "New Chat", something went wrong');
+              }
+            } catch (error) {
+              console.error('❌ Error fetching title:', error);
+            }
+          };
+          
+          fetchTitle();
+        } else {
+          console.log('🔄 Already have title:', activeSession?.title || 'undefined');
         }
         
         onFirstMessageSent?.();

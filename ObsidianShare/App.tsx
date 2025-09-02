@@ -28,6 +28,8 @@ function AppContent() {
     createSession,
     deleteSession,
     loadSessionMessages,
+    updateSessionMessages,
+    refreshSessions,
     renameSession,
     isInitialized,
     isLoading,
@@ -75,12 +77,10 @@ function AppContent() {
             sessionId={activeSessionId}
             activeSession={activeSession}
             loadSessionMessages={loadSessionMessages}
+            updateSessionMessages={updateSessionMessages}
+            renameSession={renameSession}
             pendingFirstMessage={pendingFirstMessage}
             onFirstMessageSent={() => setPendingFirstMessage(null)}
-            onUpdateChatTitle={(sessionId, title) => {
-              console.log('🏷️ Updating chat title for session:', sessionId, 'to:', title);
-              renameSession(sessionId, title);
-            }}
           />
         </ErrorBoundary>
       )}
