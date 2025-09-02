@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -13,6 +14,7 @@ import { ChatScreen } from './screens/ChatScreen';
 import { CustomDrawerContent } from './components/CustomDrawerContent';
 import { ProgressiveDrawer } from './components/ProgressiveDrawer';
 import { DrawerProvider } from './contexts/DrawerContext';
+import { ErrorBoundary } from './ErrorBoundary';
 
 
 const Stack = createNativeStackNavigator();
@@ -28,6 +30,40 @@ function MainStack() {
 
 function AppContent() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const handleDrawerChange = (open: boolean) => {
+    console.log('🎭 App handleDrawerChange:', open, '(current:', isDrawerOpen, ')');
+    try {
+      setIsDrawerOpen(open);
+      console.log('✅ App drawer state changed to:', open);
+    } catch (error) {
+      console.error('❌ App drawer state change failed:', error);
+      console.error('❌ Error details:', error.name, error.message, error.stack);
+      // Don't rethrow to prevent crash
+      console.log('🩹 Continuing despite drawer state error...');
+    }
+  };
+
+  // Add global error handlers
+  React.useEffect(() => {
+    const originalError = console.error;
+    console.error = (...args) => {
+      if (args[0]?.includes?.('Warning: Cannot update a component')) {
+        console.log('🔍 React state update warning intercepted:', args);
+      }
+      originalError.apply(console, args);
+    };
+
+    const handleError = (error: any, isFatal: boolean) => {
+      console.log('🚨 Global Error Handler:', { error, isFatal });
+      console.log('🚨 Error message:', error?.message);
+      console.log('🚨 Error stack:', error?.stack);
+    };
+
+    return () => {
+      console.error = originalError;
+    };
+  }, []);
 
   // Auto-detect server IP: Development builds or Expo Go
   const debuggerHost = Constants.debuggerHost?.split(':')[0] 
@@ -46,17 +82,37 @@ function AppContent() {
     <>
       <StatusBar style="dark" />
       <SessionsProvider config={sessionConfig}>
-        <DrawerProvider isOpen={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-          <NavigationContainer theme={LightTheme}>
-            <ProgressiveDrawer
-              isOpen={isDrawerOpen}
-              onOpenChange={setIsDrawerOpen}
-              drawerContent={<CustomDrawerContent onClose={() => setIsDrawerOpen(false)} />}
+        <ErrorBoundary fallback={({ error, retry }) => (
+          <View style={{ flex: 1, padding: 20, justifyContent: 'center', backgroundColor: '#fff' }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#c33', textAlign: 'center', marginBottom: 16 }}>
+              🚨 Drawer System Error
+            </Text>
+            <Text style={{ fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 8 }}>
+              {error.message}
+            </Text>
+            <Text style={{ fontSize: 12, color: '#999', textAlign: 'center', marginBottom: 20 }}>
+              This should help us debug the menu button crash
+            </Text>
+            <TouchableOpacity 
+              style={{ backgroundColor: '#dc2626', padding: 12, borderRadius: 8, alignItems: 'center' }}
+              onPress={retry}
             >
-              <MainStack />
-            </ProgressiveDrawer>
-          </NavigationContainer>
-        </DrawerProvider>
+              <Text style={{ color: 'white', fontWeight: '600' }}>Restart App</Text>
+            </TouchableOpacity>
+          </View>
+        )}>
+          <DrawerProvider isOpen={isDrawerOpen} onOpenChange={handleDrawerChange}>
+            <NavigationContainer theme={LightTheme}>
+              <ProgressiveDrawer
+                isOpen={isDrawerOpen}
+                onOpenChange={handleDrawerChange}
+                drawerContent={<CustomDrawerContent onClose={() => handleDrawerChange(false)} />}
+              >
+                <MainStack />
+              </ProgressiveDrawer>
+            </NavigationContainer>
+          </DrawerProvider>
+        </ErrorBoundary>
       </SessionsProvider>
     </>
   );

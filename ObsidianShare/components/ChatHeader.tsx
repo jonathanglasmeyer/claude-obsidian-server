@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
@@ -13,18 +13,44 @@ interface ChatHeaderProps {
 export function ChatHeader({ title, onMenuPress, onMorePress }: ChatHeaderProps) {
   const insets = useSafeAreaInsets();
 
-  // Create a tap gesture for the menu button that has priority over pan gestures
+  // Create proper Gesture.Tap for menu button - FORCE JS THREAD EXECUTION
   const menuTapGesture = Gesture.Tap()
-    .onEnd(() => {
-      console.log('🍔 Menu button pressed via gesture!');
-      onMenuPress();
+    .maxDuration(250) // Quick tap only
+    .maxDistance(10) // Allow small movement
+    .runOnJS(true) // CRITICAL: Force callback to run on JS thread where React Context works
+    .onStart(() => {
+      console.log('👇 Menu Gesture.Tap onStart - running on JS thread');
+    })
+    .onEnd((event, success) => {
+      if (success) {
+        console.log('🍔 Menu button tapped via Gesture.Tap - executing on JS thread!');
+        try {
+          console.log('🔍 About to call onMenuPress directly (JS thread)...');
+          onMenuPress(); // Can now safely call React Context function
+          console.log('✅ Menu tap completed successfully');
+        } catch (error) {
+          console.error('❌ Menu tap failed:', error);
+          console.error('❌ Error details:', error.message, error.stack);
+        }
+      }
+    })
+    .onFinalize((event, success) => {
+      console.log('👆 Menu Gesture.Tap onFinalize -', success ? 'SUCCESS' : 'FAILED');
     });
 
   const moreTapGesture = Gesture.Tap()
-    .onEnd(() => {
-      if (onMorePress) {
-        console.log('⋮ More button pressed via gesture!');
-        onMorePress();
+    .maxDuration(250)
+    .maxDistance(10)
+    .runOnJS(true) // CRITICAL: Force callback to run on JS thread where React Context works
+    .onEnd((event, success) => {
+      if (success && onMorePress) {
+        console.log('⋮ More button tapped via Gesture.Tap - executing on JS thread!');
+        try {
+          onMorePress(); // Can now safely call React Context function
+          console.log('✅ More tap completed successfully');
+        } catch (error) {
+          console.error('❌ More tap failed:', error);
+        }
       }
     });
 
@@ -44,7 +70,7 @@ export function ChatHeader({ title, onMenuPress, onMorePress }: ChatHeaderProps)
         alignItems: 'center',
         height: 48,
       }}>
-        {/* Navigation Icon with Gesture */}
+        {/* Navigation Icon - Gesture.Tap */}
         <GestureDetector gesture={menuTapGesture}>
           <View style={{ 
             width: 48,
@@ -71,7 +97,7 @@ export function ChatHeader({ title, onMenuPress, onMorePress }: ChatHeaderProps)
           </Text>
         </View>
         
-        {/* Action Icon with Gesture */}
+        {/* Action Icon - Gesture.Tap */}
         <GestureDetector gesture={moreTapGesture}>
           <View style={{ 
             width: 48,

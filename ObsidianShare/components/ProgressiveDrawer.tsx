@@ -33,6 +33,7 @@ export function ProgressiveDrawer({
   const drawerProgress = useSharedValue(isOpen ? 1 : 0);
   const isDrawerOpen = useSharedValue(isOpen);
 
+
   // Watch for external isOpen prop changes
   React.useEffect(() => {
     console.log('🔄 External isOpen prop changed:', isOpen, 'current internal state:', isDrawerOpen.value);
@@ -50,15 +51,16 @@ export function ProgressiveDrawer({
     }
   };
 
-  // Create separate pan gesture instances to avoid conflicts
+  // Create separate pan gesture instances with proper tap coexistence
   const createPanGesture = () => Gesture.Pan()
-    .minDistance(2) // Very low for immediate response
-    .activeOffsetX([-5, 5]) // Very sensitive to both directions
-    .failOffsetY([-40, 40]) // Allow more vertical movement
+    .minDistance(15) // Require significant movement before activating
+    .activeOffsetX([-20, 20]) // Give more tolerance for tap gestures
+    .failOffsetY([-60, 60]) // Fail if too much vertical movement (likely scroll/tap)
     .maxPointers(1) // Only single finger
     .shouldCancelWhenOutside(false)
     .minPointers(1)
-    .enableTrackpadTwoFingerGesture(false) // Prevent trackpad interference
+    .enableTrackpadTwoFingerGesture(false)
+    .runOnJS(true)
     .onBegin(() => {
       console.log('🟡 Pan gesture BEGIN (touch detected)');
     })
@@ -202,7 +204,7 @@ export function ProgressiveDrawer({
 
   return (
     <View style={styles.container}>
-      {/* Main content with gesture detection - back to full coverage */}
+      {/* Main content with gesture detection - configured to coexist with tap gestures */}
       <GestureDetector gesture={contentPanGesture}>
         <Animated.View style={[styles.content, contentAnimatedStyle]}>
           {children}

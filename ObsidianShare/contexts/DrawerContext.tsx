@@ -18,8 +18,33 @@ export function DrawerProvider({
   onOpenChange: (open: boolean) => void;
 }) {
   const contextValue: DrawerContextType = {
-    openDrawer: () => onOpenChange(true),
-    closeDrawer: () => onOpenChange(false),
+    openDrawer: () => {
+      console.log('🚪 openDrawer called - current state:', isOpen);
+      console.log('🔍 React render phase check:', 
+        React.isValidElement(React.createElement('div')) ? 'safe' : 'unsafe');
+      try {
+        console.log('🔄 About to call onOpenChange(true)...');
+        onOpenChange(true);
+        console.log('✅ openDrawer succeeded');
+      } catch (error) {
+        console.error('❌ openDrawer failed:', error);
+        console.error('❌ Error name:', error.name);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error stack:', error.stack);
+        // Don't rethrow - let the app continue
+        console.log('🩹 Continuing despite error to avoid crash...');
+      }
+    },
+    closeDrawer: () => {
+      console.log('🚪 closeDrawer called - current state:', isOpen);
+      try {
+        onOpenChange(false);
+        console.log('✅ closeDrawer succeeded');
+      } catch (error) {
+        console.error('❌ closeDrawer failed:', error);
+        throw error;
+      }
+    },
     isDrawerOpen: isOpen,
   };
 

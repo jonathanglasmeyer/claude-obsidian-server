@@ -12,7 +12,10 @@ export function StartNewScreen() {
   const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { openDrawer } = useDrawerContext();
+  const drawerContext = useDrawerContext();
+  console.log('🔍 StartNewScreen drawerContext:', drawerContext);
+  console.log('🔍 StartNewScreen drawerContext.openDrawer type:', typeof drawerContext.openDrawer);
+  const { openDrawer } = drawerContext;
   
   // Auto-detect server IP: Development builds or Expo Go
   const debuggerHost = Constants.debuggerHost?.split(':')[0] 
