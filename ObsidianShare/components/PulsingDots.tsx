@@ -31,7 +31,7 @@ export function PulsingDots() {
 
   return (
     <View style={{ 
-      alignItems: 'center',
+      alignItems: 'flex-start',
       paddingVertical: 12,
       paddingHorizontal: 4
     }}>

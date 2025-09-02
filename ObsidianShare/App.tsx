@@ -18,8 +18,9 @@ import {
 } from '@obsidian-bridge/shared-components';
 import { ErrorBoundary, ChatErrorFallback } from './ErrorBoundary';
 import { PulsingDots } from './components/PulsingDots';
+import { MarkdownMessage } from './components/MarkdownMessage';
 
-// Modern ChatGPT-style message bubbles
+// Modern ChatGPT-style message bubbles with Markdown support
 function MessageBubble({ role, children }) {
   const isUser = role === 'user';
   
@@ -38,13 +39,11 @@ function MessageBubble({ role, children }) {
           borderRadius: 18,
           maxWidth: '80%',
         }}>
-          <Text style={{
-            fontSize: 16,
-            lineHeight: 22,
-            color: '#333',
-          }}>
-            {children}
-          </Text>
+          {typeof children === 'string' ? (
+            <MarkdownMessage content={children} isAssistant={false} />
+          ) : (
+            children
+          )}
         </View>
       </View>
     );
@@ -56,13 +55,11 @@ function MessageBubble({ role, children }) {
       marginVertical: 16,
       paddingHorizontal: 16,
     }}>
-      <Text style={{
-        fontSize: 16,
-        lineHeight: 24,
-        color: '#333',
-      }}>
-        {children}
-      </Text>
+      {typeof children === 'string' ? (
+        <MarkdownMessage content={children} isAssistant={true} />
+      ) : (
+        children
+      )}
     </View>
   );
 }
@@ -257,7 +254,7 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
                 
                 switch (part.type) {
                   case 'text':
-                    return <Text key={partKey}>{part.text}</Text>;
+                    return <MarkdownMessage key={partKey} content={part.text} isAssistant={message.role === 'assistant'} />;
                   
                   // Step metadata - don't render (like web prototype)
                   case 'step-start':
@@ -292,7 +289,7 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
                   default:
                     // Fallback for any unknown part types
                     if (typeof part === 'string') {
-                      return <Text key={partKey}>{part}</Text>;
+                      return <MarkdownMessage key={partKey} content={part} isAssistant={message.role === 'assistant'} />;
                     }
                     return (
                       <Text key={partKey} style={{ fontStyle: 'italic', color: '#999' }}>
