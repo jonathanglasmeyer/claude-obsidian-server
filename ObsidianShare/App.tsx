@@ -277,21 +277,28 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
               if (status === 'streaming' || status === 'submitted') return;
               
               if (inputText.trim()) {
+                const messageToSend = inputText.trim();
                 console.log('📤 Sending message to sessionId:', sessionId);
                 console.log('📤 sendMessage type:', typeof sendMessage);
-                console.log('📤 Attempting to send:', inputText);
+                console.log('📤 Attempting to send:', messageToSend);
+                
+                // Clear input immediately for better UX
+                setInputText('');
                 
                 try {
                   if (sendMessage) {
                     // Use React Native AI SDK pattern
-                    await sendMessage({ text: inputText });
+                    await sendMessage({ text: messageToSend });
                     console.log('✅ Message sent successfully');
-                    setInputText('');
                   } else {
                     console.error('❌ sendMessage is not available');
+                    // Restore input text if sendMessage failed
+                    setInputText(messageToSend);
                   }
                 } catch (error) {
                   console.error('❌ Error sending message:', error);
+                  // Restore input text on error
+                  setInputText(messageToSend);
                 }
               }
             }}
