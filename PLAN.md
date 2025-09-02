@@ -35,16 +35,18 @@ Official AI SDK v5 with DefaultChatTransport, proper polyfills, session persiste
 ✅ **Markdown rendering fully implemented** - MarkdownMessage component with comprehensive styling
 ✅ **ChatGPT-style welcome screen** - App starts fresh without active chat, optimistic message display, automatic title generation from first message (30 char limit, real-time sidebar updates) ✅ COMPLETE
 
-- context menu in drawer to rename & delete chats
-- chat bubble hoehe meiner nachrichten is zu hoch
-- text groesse im chat etwas klein
 ✅ **hairline beim composer nur wenn chat nach oben gescrollt (also invisible wenn ganz unten im chat)** - Conditional hairline with scroll position detection
 ✅ **keyboard wird sehr schnell dismissed beim scrollen** - Removed aggressive onScrollBeginDrag dismiss, using keyboardShouldPersistTaps="handled"
+
+✅ **chat bubble hoehe meiner nachrichten is zu hoch** - Reduced user bubble paddingVertical from 12 to 4px, uniform 8px marginVertical
+✅ **text groesse im chat etwas klein** - Increased chat text fontSize from 15 to 16px with proportional lineHeight
+
 drawer:
 - press on hold macht n eckige selection
 - 'new chat' sollte welcome screen starten
 - '4 messges' muss sekundaerere color
 - swipe on main chat pane sollte drawer reinziehen
+- rename & delete chats
 
 ### 🚫 DEFERRED STEPS
 

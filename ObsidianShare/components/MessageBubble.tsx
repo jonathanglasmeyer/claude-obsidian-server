@@ -21,7 +21,7 @@ export function MessageBubble({ role, children }: MessageBubbleProps) {
         <View style={{
           backgroundColor: '#f0f0f0',
           paddingHorizontal: 16,
-          paddingVertical: 12,
+          paddingVertical: 4,
           borderRadius: 18,
           maxWidth: '80%',
         }}>
@@ -38,7 +38,7 @@ export function MessageBubble({ role, children }: MessageBubbleProps) {
   // Assistant message: full-width with left/right padding
   return (
     <View style={{
-      marginVertical: 16,
+      marginVertical: 8,
       paddingHorizontal: 16,
     }}>
       {typeof children === 'string' ? (

@@ -36,8 +36,8 @@ function createStyles(isDark: boolean, isAssistant: boolean) {
   
   return StyleSheet.create({
     body: {
-      fontSize: 15,
-      lineHeight: 20,
+      fontSize: 16,
+      lineHeight: 21,
       color: textColor,
       fontFamily: 'System',
     },
@@ -62,8 +62,8 @@ function createStyles(isDark: boolean, isAssistant: boolean) {
     paragraph: {
       marginVertical: 2,
       color: textColor,
-      fontSize: 15,
-      lineHeight: 20,
+      fontSize: 16,
+      lineHeight: 21,
     },
     strong: {
       fontWeight: 'bold',

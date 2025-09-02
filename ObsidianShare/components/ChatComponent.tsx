@@ -308,7 +308,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
       <ScrollView 
         ref={scrollViewRef}
         style={{ flex: 1, zIndex: 1, backgroundColor: '#fff' }} 
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{ paddingBottom: 8, paddingTop: 8 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         onScroll={handleScroll}
