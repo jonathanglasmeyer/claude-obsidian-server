@@ -237,6 +237,293 @@ function HeaderComponent() {
 - Direct React Context access
 - Simpler architecture
 
+## Real-World Case Study: Menu Button Crash Investigation
+
+### The Problem We Solved
+
+**Scenario**: Progressive drawer app with menu button in header that crashes immediately when tapped.
+
+**Symptoms**:
+- App crashes with no error boundaries catching the issue
+- Error message: "onMenuPress is not a function (it is Object)"
+- Crash occurs after gesture recognition but before React Context execution
+- Error boundaries and comprehensive logging didn't prevent crashes
+
+**Initial Failed Attempts**:
+1. ❌ TouchableOpacity → Pan gesture consumed events
+2. ❌ Complex error boundaries → Crashes happened in native layer
+3. ❌ setTimeout workarounds → Still worklet thread issues  
+4. ❌ React state bridges → State setters also failed in worklet
+5. ❌ runOnJS() attempts → Import/API errors
+
+### The Root Cause Discovery
+
+**Key insight**: React Native Gesture Handler automatically workletizes callbacks when `react-native-reanimated` is installed, causing:
+- Gesture callbacks run on UI thread (worklet)
+- React Context functions (useDrawerContext) run on JS thread
+- Thread boundary violation → immediate crash
+
+### The Working Solution
+
+```jsx
+// ✅ WORKING: ChatHeader.tsx
+const menuTapGesture = Gesture.Tap()
+  .maxDuration(250)
+  .maxDistance(10)
+  .runOnJS(true) // 🎯 THE CRITICAL FIX
+  .onEnd((event, success) => {
+    if (success) {
+      onMenuPress(); // Now safe - running on JS thread
+    }
+  });
+```
+
+**Why this specific approach worked**:
+- `.runOnJS(true)` forces ALL callbacks to JS thread
+- Direct access to React Context without bridging
+- Simple, clean architecture
+- Compatible with gesture priority systems
+
+### Debugging Journey Lessons
+
+1. **Thread context matters more than React patterns** - Error boundaries can't catch thread violations
+2. **Workletization is automatic** - No explicit worklet markers needed with Reanimated
+3. **Research over trial-and-error** - Context7 docs provided the exact solution
+4. **Simple solutions work best** - Complex state bridges were unnecessary
+
+### Implementation Notes
+
+**Gesture Priority Configuration**:
+```jsx
+// Pan gesture for drawer opening
+const drawerPan = Gesture.Pan()
+  .minDistance(15) // Higher threshold to avoid tap conflicts
+  .activeOffsetX([-20, 20]) // More tolerance for taps
+
+// Tap gesture for buttons  
+const buttonTap = Gesture.Tap()
+  .runOnJS(true) // Force JS thread execution
+  .maxDuration(250)
+  .maxDistance(10)
+```
+
+**Error Handling**:
+```jsx
+.onEnd((event, success) => {
+  if (success) {
+    try {
+      onMenuPress(); // React Context call
+    } catch (error) {
+      console.error('Callback failed:', error);
+      // Error handling on JS thread works normally
+    }
+  }
+})
+```
+
+## Debugging Approach
+
+When facing React Native Gesture Handler crashes, follow this systematic approach:
+
+### Phase 1: Isolate the Thread Issue
+
+1. **Add comprehensive logging** to gesture callbacks:
+```jsx
+const gesture = Gesture.Tap()
+  .onStart(() => {
+    console.log('🟡 Gesture onStart');
+    console.log('🔍 Worklet context:', global._WORKLET);
+  })
+  .onEnd((event, success) => {
+    console.log('🟢 Gesture onEnd - success:', success);
+    console.log('🔍 About to call callback...');
+    // Callback here - observe if app crashes before/after this log
+  });
+```
+
+2. **Check where crashes occur** in the log sequence:
+   - Before callback = Thread/worklet issue
+   - During callback = React Context issue  
+   - After callback = State update issue
+
+### Phase 2: Verify Context Availability
+
+Add debugging to consuming components:
+
+```jsx
+function ConsumingComponent() {
+  const context = useDrawerContext();
+  console.log('🔍 Context available:', !!context);
+  console.log('🔍 Context methods:', Object.keys(context));
+  console.log('🔍 openDrawer type:', typeof context.openDrawer);
+  
+  return (
+    <ChatHeader 
+      onMenuPress={() => {
+        console.log('🎯 Callback called - context type:', typeof context.openDrawer);
+        context.openDrawer();
+      }}
+    />
+  );
+}
+```
+
+### Phase 3: Test Thread Safety
+
+```jsx
+const gesture = Gesture.Tap()
+  .onEnd((event, success) => {
+    if (success) {
+      console.log('🔍 Thread test - _WORKLET:', global._WORKLET);
+      
+      try {
+        // Test direct call
+        onMenuPress();
+        console.log('✅ Direct call succeeded');
+      } catch (error) {
+        console.error('❌ Direct call failed:', error.message);
+        console.log('🔍 Error suggests thread issue');
+      }
+    }
+  });
+```
+
+## Error Patterns and Solutions
+
+### Pattern 1: "X is not a function (it is Object)"
+- **Cause**: Function serialization across thread boundaries
+- **Solution**: Add `.runOnJS(true)` to gesture configuration
+
+### Pattern 2: App crashes with no error logs
+- **Cause**: Native thread crash before JS error handling
+- **Solution**: Focus on thread safety, not error handling
+
+### Pattern 3: "Cannot access property X of undefined"  
+- **Cause**: Context not available in worklet thread
+- **Solution**: Verify context provider setup and thread execution
+
+### Pattern 4: "runOnJS is not defined"
+- **Cause**: Import or API usage issues
+- **Solution**: Use `.runOnJS(true)` property instead of `runOnJS()` function
+
+## Debugging Tools
+
+### Log Thread Context
+```jsx
+const debugThreadContext = () => {
+  console.log('Thread info:', {
+    isWorklet: !!global._WORKLET,
+    isJSThread: !global._WORKLET,
+    hasRunOnJS: typeof runOnJS !== 'undefined'
+  });
+};
+```
+
+### Gesture State Debugging
+```jsx
+const gesture = Gesture.Tap()
+  .onBegin(() => console.log('🟡 BEGIN'))
+  .onStart(() => console.log('🟢 START')) 
+  .onEnd(() => console.log('🔴 END'))
+  .onFinalize(() => console.log('🏁 FINALIZE'));
+```
+
+### Context Validation
+```jsx
+const validateContext = (context, name) => {
+  if (!context) {
+    console.error(`❌ ${name} context is null/undefined`);
+    return false;
+  }
+  
+  console.log(`✅ ${name} context available:`, Object.keys(context));
+  return true;
+};
+```
+
+## Performance Monitoring
+
+### Gesture Response Time
+```jsx
+const gesture = Gesture.Tap()
+  .onStart(() => {
+    console.time('gesture-response');
+  })
+  .onEnd((event, success) => {
+    if (success) {
+      console.timeEnd('gesture-response');
+      // Typical values: < 16ms for good UX
+    }
+  });
+```
+
+### Thread Execution Time
+```jsx
+const gesture = Gesture.Tap()
+  .runOnJS(true) // Test with/without this
+  .onEnd(() => {
+    const start = Date.now();
+    onMenuPress();
+    const duration = Date.now() - start;
+    console.log('Callback duration:', duration, 'ms');
+  });
+```
+
+## Common Debugging Mistakes
+
+### ❌ Don't: Try complex workarounds first
+```jsx
+// Avoid complex state bridges, timeouts, etc.
+setTimeout(() => onMenuPress(), 0); // Still has thread issues
+```
+
+### ✅ Do: Test thread safety first  
+```jsx
+// Simple, direct approach
+const gesture = Gesture.Tap()
+  .runOnJS(true) // Start here
+  .onEnd(() => onMenuPress());
+```
+
+### ❌ Don't: Assume error boundaries will help
+```jsx
+// Error boundaries can't catch native thread crashes
+<ErrorBoundary>
+  <GestureDetector gesture={crashingGesture}>
+```
+
+### ✅ Do: Fix the thread issue at source
+```jsx  
+// Fix the root cause
+const gesture = Gesture.Tap()
+  .runOnJS(true) // Prevents crashes entirely
+```
+
+## Validation Checklist
+
+Before considering your gesture integration complete:
+
+- [ ] Tested on both debug and release builds
+- [ ] Verified with Metro cache cleared (`npx expo start --clear`)
+- [ ] Confirmed gesture works after multiple interactions  
+- [ ] Tested alongside other gestures (pan, scroll, etc.)
+- [ ] Performance tested (< 16ms response time)
+- [ ] Error handling works for React Context failures
+- [ ] No memory leaks (listeners properly cleaned up)
+
 ## Summary
 
 The fundamental issue is **thread safety**. React Native Gesture Handler runs callbacks on the UI thread by default (when Reanimated is installed), but React Context lives on the JS thread. The safest solution is `.runOnJS(true)` to force callbacks onto the JS thread where React Context is accessible.
+
+**Key takeaway**: When React Native Gesture Handler + React Context integration fails, it's almost always a thread safety issue, not a React pattern problem. Use `.runOnJS(true)` first, debug second.
+
+## Research Resources
+
+When debugging fails, research these topics:
+
+1. **React Native Gesture Handler worklet documentation**
+2. **react-native-reanimated threading model**  
+3. **Context7 lookup for specific gesture patterns**
+4. **Official examples in gesture handler repository**
+
+Remember: Most gesture + context issues are **thread safety problems**, not React patterns problems. Research thread safety solutions first.
