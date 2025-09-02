@@ -11,7 +11,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const DRAWER_WIDTH = 280;
+console.log('📱 Screen width:', SCREEN_WIDTH, 'px - Drawer width:', DRAWER_WIDTH, 'px - Ratio:', (DRAWER_WIDTH/SCREEN_WIDTH*100).toFixed(1)+'%');
+const DRAWER_WIDTH = 330;
 const SNAP_THRESHOLD = 0.5;
 const VELOCITY_THRESHOLD = 300; // Lower threshold = more sensitive to flicks
 
