@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 
 interface ChatHeaderProps {
   title: string;
@@ -11,6 +12,21 @@ interface ChatHeaderProps {
 
 export function ChatHeader({ title, onMenuPress, onMorePress }: ChatHeaderProps) {
   const insets = useSafeAreaInsets();
+
+  // Create a tap gesture for the menu button that has priority over pan gestures
+  const menuTapGesture = Gesture.Tap()
+    .onEnd(() => {
+      console.log('🍔 Menu button pressed via gesture!');
+      onMenuPress();
+    });
+
+  const moreTapGesture = Gesture.Tap()
+    .onEnd(() => {
+      if (onMorePress) {
+        console.log('⋮ More button pressed via gesture!');
+        onMorePress();
+      }
+    });
 
   return (
     <View style={{ 
@@ -28,19 +44,18 @@ export function ChatHeader({ title, onMenuPress, onMorePress }: ChatHeaderProps)
         alignItems: 'center',
         height: 48,
       }}>
-        {/* Navigation Icon */}
-        <TouchableOpacity 
-          onPress={onMenuPress}
-          style={{ 
+        {/* Navigation Icon with Gesture */}
+        <GestureDetector gesture={menuTapGesture}>
+          <View style={{ 
             width: 48,
             height: 48,
             alignItems: 'center',
             justifyContent: 'center',
             marginLeft: 4,
-          }}
-        >
-          <MaterialIcons name="menu" size={24} color="#1d1b20" />
-        </TouchableOpacity>
+          }}>
+            <MaterialIcons name="menu" size={24} color="#1d1b20" />
+          </View>
+        </GestureDetector>
         
         {/* Title */}
         <View style={{ flex: 1, justifyContent: 'center' }}>
@@ -56,19 +71,18 @@ export function ChatHeader({ title, onMenuPress, onMorePress }: ChatHeaderProps)
           </Text>
         </View>
         
-        {/* Action Icon */}
-        <TouchableOpacity 
-          onPress={onMorePress}
-          style={{ 
+        {/* Action Icon with Gesture */}
+        <GestureDetector gesture={moreTapGesture}>
+          <View style={{ 
             width: 48,
             height: 48,
             alignItems: 'center',
             justifyContent: 'center',
             marginRight: 4,
-          }}
-        >
-          <MaterialIcons name="more-vert" size={24} color="#49454f" />
-        </TouchableOpacity>
+          }}>
+            <MaterialIcons name="more-vert" size={24} color="#49454f" />
+          </View>
+        </GestureDetector>
       </View>
     </View>
   );
