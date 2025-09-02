@@ -89,34 +89,37 @@ export function SideMenu({
         
         {/* M3-Compliant New Chat List Item */}
         <View style={{ paddingHorizontal: 12, marginBottom: 12 }}>
-          <TouchableOpacity 
-            onPress={async () => {
-              console.log('Creating new chat');
-              try {
-                await onCreateSession();
-                onClose();
-              } catch (error) {
-                console.error('Failed to create new chat:', error);
-              }
-            }}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel="Create new chat"
-            accessibilityHint="Starts a new conversation"
-            style={{ 
-              flexDirection: 'row',
-              alignItems: 'center',
-              minHeight: 48,                    // M3 minimum touch target
-              paddingVertical: 8,
-              paddingHorizontal: 16,
-              borderRadius: 24,                 // M3 full pill shape
-              backgroundColor: 'transparent',
-            }}
-            android_ripple={{               // M3 ripple effect
-              color: 'rgba(103, 80, 164, 0.12)',
-              borderless: false,
-            }}
-          >
+          <View style={{ 
+            borderRadius: 24,
+            overflow: 'hidden',
+          }}>
+            <TouchableOpacity 
+              onPress={async () => {
+                console.log('Creating new chat');
+                try {
+                  await onCreateSession();
+                  onClose();
+                } catch (error) {
+                  console.error('Failed to create new chat:', error);
+                }
+              }}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Create new chat"
+              accessibilityHint="Starts a new conversation"
+              style={{ 
+                flexDirection: 'row',
+                alignItems: 'center',
+                minHeight: 48,                    // M3 minimum touch target
+                paddingVertical: 8,
+                paddingHorizontal: 16,
+                backgroundColor: 'transparent',
+              }}
+              android_ripple={{               // M3 ripple effect
+                color: 'rgba(103, 80, 164, 0.12)',
+                borderless: false,
+              }}
+            >
             {/* M3 Leading Icon */}
             <View style={{ 
               width: 24, 
@@ -145,7 +148,8 @@ export function SideMenu({
             }}>
               New chat
             </Text>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
         </View>
         
         {/* Spacer instead of divider - cleaner M3 approach */}
@@ -175,34 +179,38 @@ export function SideMenu({
               const [isPressed, setIsPressed] = useState(false);
               
               return (
-                <Pressable
-                  onPressIn={() => setIsPressed(true)}
-                  onPressOut={() => setIsPressed(false)}
-                  style={({ pressed }) => [
-                    {
-                      paddingHorizontal: 20,
-                      paddingVertical: 8,
-                      borderRadius: 28,
-                      marginHorizontal: 8,
-                      marginVertical: 4,
-                      minHeight: 56,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      backgroundColor: session.id === activeSessionId 
-                        ? 'rgba(103, 80, 164, 0.08)'  // Active
-                        : (pressed || isPressed) 
-                          ? 'rgba(103, 80, 164, 0.04)'  // Hover/Press
-                          : 'rgba(0, 0, 0, 0.02)',      // Subtle default for usability
-                    }
-                  ]}
-                  android_ripple={{
-                    color: 'rgba(103, 80, 164, 0.12)',
-                    borderless: false,
-                  }}
-                  {...props}
-                >
-                  {children}
-                </Pressable>
+                <View style={{
+                  borderRadius: 28,
+                  marginHorizontal: 8,
+                  marginVertical: 4,
+                  overflow: 'hidden',
+                }}>
+                  <Pressable
+                    onPressIn={() => setIsPressed(true)}
+                    onPressOut={() => setIsPressed(false)}
+                    style={({ pressed }) => [
+                      {
+                        paddingHorizontal: 20,
+                        paddingVertical: 8,
+                        minHeight: 56,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: session.id === activeSessionId 
+                          ? 'rgba(103, 80, 164, 0.08)'  // Active
+                          : (pressed || isPressed) 
+                            ? 'rgba(103, 80, 164, 0.04)'  // Hover/Press
+                            : 'rgba(0, 0, 0, 0.02)',      // Subtle default for usability
+                      }
+                    ]}
+                    android_ripple={{
+                      color: 'rgba(103, 80, 164, 0.12)',
+                      borderless: false,
+                    }}
+                    {...props}
+                  >
+                    {children}
+                  </Pressable>
+                </View>
               );
             };
 
