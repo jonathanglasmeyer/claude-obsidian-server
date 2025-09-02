@@ -4,10 +4,12 @@ import {
   Text, 
   TextInput, 
   TouchableOpacity, 
-  ScrollView
+  ScrollView,
+  Platform
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { fetch as expoFetch } from 'expo/fetch';
@@ -441,6 +443,24 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
   );
 }
 
+// Generate dynamic conversation title from first user message
+function generateConversationTitle(session: any): string {
+  if (!session || !session.messageCount || session.messageCount === 0) {
+    return 'New Chat';
+  }
+  
+  // For now, use creation timestamp since we don't have messages loaded here
+  // In a full implementation, you'd load first message content
+  const date = new Date(session.createdAt || Date.now());
+  const isToday = date.toDateString() === new Date().toDateString();
+  
+  if (isToday) {
+    return `Chat ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  } else {
+    return `Chat ${date.toLocaleDateString()}`;
+  }
+}
+
 // 🔑 Main App Content (extracted for SafeAreaProvider)
 function AppContent() {
   const [sideMenuVisible, setSideMenuVisible] = useState(false);
@@ -512,61 +532,59 @@ function AppContent() {
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <StatusBar style="dark" />
         
-        {/* Modern Header with Safe Area */}
+        {/* M3 Small App Bar - Compliant Header */}
         <View style={{ 
           paddingTop: insets.top,
-          paddingHorizontal: 16,
-          paddingVertical: 12,
+          height: 64 + insets.top,      // M3 Small TopAppBar: 64dp + safe area
+          paddingHorizontal: 12,        // 16dp - 4dp margin adjustment = 12dp
+          justifyContent: 'flex-end',
+          paddingBottom: 8,
+          backgroundColor: '#ffffff',   // Clean white like reference
           borderBottomWidth: 1,
-          borderBottomColor: '#f0f0f0',
-          backgroundColor: '#fff',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.1,
-          shadowRadius: 3,
-          elevation: 3
+          borderBottomColor: '#e5e5e5', // Subtle gray border
         }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ 
+            flexDirection: 'row', 
+            alignItems: 'center',
+            height: 48,                 // Center content in 48dp area
+          }}>
+            {/* Navigation Icon - M3 Touch Target */}
             <TouchableOpacity 
               onPress={() => setSideMenuVisible(true)}
               style={{ 
-                marginRight: 12,
-                padding: 8,
+                width: 48,
+                height: 48,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginLeft: 4,          // 16dp from screen edge (12+4)
               }}
             >
-              <Text style={{ fontSize: 20, color: '#333' }}>←</Text>
+              <MaterialIcons name="menu" size={24} color="#1d1b20" />
             </TouchableOpacity>
             
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ 
-                  fontSize: 16, 
-                  fontWeight: '600',
-                  color: '#333',
-                  marginRight: 8
-                }}>
-                  ChatGPT
-                </Text>
-                <View style={{
-                  backgroundColor: '#10a37f',
-                  paddingHorizontal: 6,
-                  paddingVertical: 2,
-                  borderRadius: 4,
-                }}>
-                  <Text style={{ color: 'white', fontSize: 10, fontWeight: '500' }}>5</Text>
-                </View>
-              </View>
+            {/* Title - M3 Typography */}
+            <View style={{ flex: 1, justifyContent: 'center' }}>
               <Text style={{ 
-                fontSize: 14, 
-                color: '#666', 
-                marginTop: 2 
+                fontSize: 18,           // Clean, not too big
+                fontWeight: '450',      // Between regular and medium
+                lineHeight: 22,         // Tight but readable
+                color: '#000000',       // Pure black like reference
+                fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'sans-serif',
+                letterSpacing: 0,       // Default spacing
               }}>
-                {activeSession?.title || 'Obsidian Chat'}
+                Obsidian Chat
               </Text>
             </View>
             
-            <TouchableOpacity style={{ padding: 8 }}>
-              <Text style={{ fontSize: 18, color: '#666' }}>⋮</Text>
+            {/* Action Icon - M3 Touch Target */}
+            <TouchableOpacity style={{ 
+              width: 48,
+              height: 48,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 4,           // 16dp from screen edge (12+4)
+            }}>
+              <MaterialIcons name="more-vert" size={24} color="#49454f" />
             </TouchableOpacity>
           </View>
         </View>
@@ -598,45 +616,44 @@ function AppContent() {
         />
       )}
       
-      {/* Modern Side Menu */}
+      {/* Modern Side Menu - TESTING CONTAINER ONLY */}
       {sideMenuVisible && (
         <View style={{
           position: 'absolute',
           top: 0,
           left: 0,
           bottom: 0,
-          width: 320,
-          backgroundColor: '#f8f9fa',
+          width: 280,
+          backgroundColor: '#fef7ff',
           zIndex: 2000,
+          elevation: 1,
           shadowColor: '#000',
-          shadowOffset: { width: 4, height: 0 },
-          shadowOpacity: 0.1,
-          shadowRadius: 8,
-          elevation: 5,
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.3,
+          shadowRadius: 1,
         }}>
-          {/* Menu Header */}
+          {/* Menu Header - TESTING */}
           <View style={{ 
-            paddingHorizontal: 20, 
-            paddingVertical: 20,
-            paddingTop: 50, // Account for status bar
+            paddingHorizontal: 24,
+            paddingVertical: 24,                 
+            paddingTop: insets.top + 24,
             borderBottomWidth: 1, 
-            borderBottomColor: '#e5e5e5',
-            backgroundColor: '#fff'
+            borderBottomColor: '#e7e0ec',
+            backgroundColor: '#ffffff'
           }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-              <TouchableOpacity onPress={() => setSideMenuVisible(false)}>
-                <Text style={{ fontSize: 20, color: '#333' }}>✕</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 32 }}>
+              <TouchableOpacity 
+                onPress={() => setSideMenuVisible(false)}
+                style={{ 
+                  padding: 12,
+                  borderRadius: 20,
+                }}
+              >
+                <MaterialIcons name="arrow-back" size={24} color="#49454f" />
               </TouchableOpacity>
-              <Text style={{ 
-                fontSize: 18, 
-                fontWeight: '600', 
-                color: '#333',
-                marginLeft: 16
-              }}>
-                Chat History
-              </Text>
             </View>
             
+            {/* NEW CHAT BUTTON - TESTING */}
             <TouchableOpacity 
               onPress={async () => {
                 console.log('Creating new chat');
@@ -648,10 +665,10 @@ function AppContent() {
                 }
               }}
               style={{ 
-                backgroundColor: '#10a37f', 
+                backgroundColor: 'rgb(124, 58, 237)', 
                 paddingVertical: 12, 
                 paddingHorizontal: 16, 
-                borderRadius: 12,
+                borderRadius: 20,
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -666,9 +683,12 @@ function AppContent() {
             </TouchableOpacity>
           </View>
           
-          {/* Sessions List */}
-          <ScrollView style={{ flex: 1, paddingHorizontal: 12 }}>
-            <Text style={{ color: '#999', padding: 16 }}>Sessions count: {sessions.length}</Text>
+          {/* SPACER */}
+          <View style={{ height: 24 }} />
+          
+          {/* SESSIONS LIST - TESTING EMPTY SCROLLVIEW */}
+          <ScrollView style={{ flex: 1, paddingHorizontal: 8, paddingTop: 8 }}>
+            {/* OPTIMIZED SESSIONS MAP - BALANCED PADDING */}
             {sessions.map((session) => (
               <TouchableOpacity
                 key={session.id}
@@ -678,32 +698,46 @@ function AppContent() {
                   setSideMenuVisible(false);
                 }}
                 style={{
-                  paddingVertical: 16,
-                  paddingHorizontal: 16,
-                  borderRadius: 12,
-                  marginVertical: 4,
-                  backgroundColor: session.id === activeSessionId ? '#10a37f' : '#fff',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 2,
-                  elevation: 1,
+                  // BALANCED M3 Navigation Drawer Item
+                  paddingHorizontal: 20,              // More generous text padding (was 16dp)
+                  paddingVertical: 8,                 // Keep vertical padding
+                  borderRadius: 28,                   // Keep full pill shape
+                  marginHorizontal: 8,                // Reduced margin (was 12dp)
+                  marginVertical: 4,                  // Better breathing room between items
+                  minHeight: 56,                      // Keep touch target
+                  backgroundColor: session.id === activeSessionId ? 'rgba(124, 58, 237, 0.12)' : '#FFFFFF',
+                  // Ensure proper alignment
+                  flexDirection: 'row',
+                  alignItems: 'center',
                 }}
               >
-                <Text style={{ 
-                  fontSize: 15,
-                  color: session.id === activeSessionId ? 'white' : '#333',
-                  fontWeight: '500',
-                  marginBottom: 4
-                }}>
-                  {session.title}
-                </Text>
-                <Text style={{ 
-                  fontSize: 12, 
-                  color: session.id === activeSessionId ? 'rgba(255,255,255,0.8)' : '#999'
-                }}>
-                  {session.messageCount || 0} messages
-                </Text>
+                <View style={{ flex: 1, justifyContent: 'center', paddingVertical: 2 }}>
+                  {/* M3 Label Large for primary text */}
+                  <Text style={{
+                    fontSize: 14,                     // M3 Label Large: 14sp
+                    fontWeight: '500',               // M3 Label Large: Medium weight
+                    color: session.id === activeSessionId ? 'rgb(124, 58, 237)' : '#1D1B20',
+                    lineHeight: 20,                  // M3 Label Large: 20sp line-height (critical!)
+                    letterSpacing: 0.1,              // M3 Label Large: +0.1sp letter spacing
+                    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'SF Pro Display',
+                  }}>
+                    {generateConversationTitle(session)}
+                  </Text>
+                  {/* M3 Body Medium for secondary text */}
+                  {session.messageCount > 0 && (
+                    <Text style={{
+                      fontSize: 14,                  // M3 Body Medium: 14sp
+                      fontWeight: '400',             // M3 Body Medium: Regular weight
+                      color: '#49454F',              // M3 On-Surface-Variant
+                      lineHeight: 20,                // M3 Body Medium: 20sp line-height (critical!)
+                      letterSpacing: 0.25,           // M3 Body Medium: +0.25sp letter spacing
+                      marginTop: 2,                  // Minimal spacing between lines
+                      fontFamily: Platform.OS === 'android' ? 'Roboto' : 'SF Pro Display',
+                    }}>
+                      {session.messageCount} messages
+                    </Text>
+                  )}
+                </View>
               </TouchableOpacity>
             ))}
           </ScrollView>
