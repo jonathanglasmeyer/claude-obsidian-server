@@ -35,8 +35,12 @@ export function ProgressiveDrawer({
 
   // Watch for external isOpen prop changes
   React.useEffect(() => {
-    drawerProgress.value = withTiming(isOpen ? 1 : 0, { duration: 250 });
-    isDrawerOpen.value = isOpen;
+    console.log('🔄 External isOpen prop changed:', isOpen, 'current internal state:', isDrawerOpen.value);
+    if (isOpen !== isDrawerOpen.value) {
+      console.log('🔧 Syncing drawer state - prop:', isOpen, '→ internal:', isDrawerOpen.value);
+      drawerProgress.value = withTiming(isOpen ? 1 : 0, { duration: 250 });
+      isDrawerOpen.value = isOpen;
+    }
   }, [isOpen]);
 
   // Notify parent when drawer state changes
@@ -46,8 +50,8 @@ export function ProgressiveDrawer({
     }
   };
 
-  // Pan gesture for progressive reveal
-  const panGesture = Gesture.Pan()
+  // Create separate pan gesture instances to avoid conflicts
+  const createPanGesture = () => Gesture.Pan()
     .minDistance(2) // Very low for immediate response
     .activeOffsetX([-5, 5]) // Very sensitive to both directions
     .failOffsetY([-40, 40]) // Allow more vertical movement
@@ -140,6 +144,11 @@ export function ProgressiveDrawer({
       });
     });
 
+  // Create individual gesture instances to avoid conflicts
+  const contentPanGesture = createPanGesture();
+  const overlayPanGesture = createPanGesture(); 
+  const drawerPanGesture = createPanGesture();
+
   // Animated style for the drawer
   const drawerAnimatedStyle = useAnimatedStyle(() => {
     const translateX = interpolate(
@@ -175,7 +184,7 @@ export function ProgressiveDrawer({
 
   // Tap gesture for overlay to close drawer - allow pan gestures to pass through
   const overlayTapGesture = Gesture.Tap()
-    .simultaneousWithExternalGesture(panGesture)
+    .simultaneousWithExternalGesture(overlayPanGesture)
     .onEnd(() => {
       if (drawerProgress.value > 0) {
         console.log('📱 Overlay tapped, closing drawer');
@@ -194,14 +203,14 @@ export function ProgressiveDrawer({
   return (
     <View style={styles.container}>
       {/* Main content with gesture detection - back to full coverage */}
-      <GestureDetector gesture={panGesture}>
+      <GestureDetector gesture={contentPanGesture}>
         <Animated.View style={[styles.content, contentAnimatedStyle]}>
           {children}
         </Animated.View>
       </GestureDetector>
       
       {/* Overlay for dimming effect with tap-to-close */}
-      <GestureDetector gesture={Gesture.Simultaneous(overlayTapGesture, panGesture)}>
+      <GestureDetector gesture={Gesture.Simultaneous(overlayTapGesture, overlayPanGesture)}>
         <Animated.View 
           style={[styles.overlay, overlayAnimatedStyle]}
           pointerEvents="auto"
@@ -209,7 +218,7 @@ export function ProgressiveDrawer({
       </GestureDetector>
       
       {/* Progressive drawer - ADD pan gesture detection here */}
-      <GestureDetector gesture={panGesture}>
+      <GestureDetector gesture={drawerPanGesture}>
         <Animated.View 
           style={[styles.drawer, drawerAnimatedStyle]}
           pointerEvents="auto" // Ensure drawer content can receive touches
