@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChatInput } from './ChatInput';
 
 interface WelcomeScreenProps {
@@ -7,18 +8,26 @@ interface WelcomeScreenProps {
 }
 
 export function WelcomeScreen({ onFirstMessage }: WelcomeScreenProps) {
+  const insets = useSafeAreaInsets();
+  const [inputFocused, setInputFocused] = useState(false);
+  
   return (
-    <View style={{ 
-      flex: 1, 
-      backgroundColor: '#fff'
-    }}>
+    <KeyboardAvoidingView 
+      behavior="padding"
+      enabled={inputFocused}
+      style={{ 
+        flex: 1, 
+        backgroundColor: '#fff'
+      }}
+    >
       {/* Main content centered */}
-      <View style={{
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 24
-      }}>
+      <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+        <View style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: 24
+        }}>
         <View style={{
           alignItems: 'center',
           marginBottom: 40
@@ -41,13 +50,15 @@ export function WelcomeScreen({ onFirstMessage }: WelcomeScreenProps) {
             What's on your mind?
           </Text>
         </View>
-      </View>
+        </View>
+      </TouchableWithoutFeedback>
 
       {/* Input at bottom */}
       <ChatInput
         onSend={onFirstMessage}
         placeholder="Type your message..."
+        onFocusChange={setInputFocused}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }

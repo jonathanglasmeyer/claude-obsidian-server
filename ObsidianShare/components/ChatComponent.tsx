@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { fetch as expoFetch } from 'expo/fetch';
@@ -23,6 +24,8 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   
   const [chatError, setChatError] = useState(null);
   const scrollViewRef = useRef(null);
+  const insets = useSafeAreaInsets();
+  const [inputFocused, setInputFocused] = useState(false);
   
   const sessionConfig = {
     apiBaseUrl: 'http://192.168.178.147:3001',
@@ -215,7 +218,12 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   };
 
   return (
-    <>
+    <KeyboardAvoidingView 
+      behavior="padding" 
+      enabled={inputFocused}
+      style={{ flex: 1 }}
+    >
+      <>
       {/* Error Display */}
       {chatError && (
         <View style={{ 
@@ -258,6 +266,8 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
         style={{ flex: 1, zIndex: 1, backgroundColor: '#fff' }} 
         contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="never"
+        onScrollBeginDrag={() => Keyboard.dismiss()}
       >
         {messages.map((message, index) => {
           const messageKey = `msg-${index}-${message.id || 'no-id'}`;
@@ -334,7 +344,10 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
       <ChatInput
         onSend={handleSendMessage}
         disabled={status === 'streaming' || status === 'submitted'}
+        showTopBorder={true}
+        onFocusChange={setInputFocused}
       />
     </>
+    </KeyboardAvoidingView>
   );
 }
