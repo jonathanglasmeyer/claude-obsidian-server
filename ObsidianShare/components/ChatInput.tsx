@@ -8,12 +8,16 @@ interface ChatInputProps {
   placeholder?: string;
   showTopBorder?: boolean;
   onFocusChange?: (focused: boolean) => void;
+  inputFocused?: boolean;
 }
 
-export function ChatInput({ onSend, disabled = false, placeholder = "Ask anything", showTopBorder = false, onFocusChange }: ChatInputProps) {
+export function ChatInput({ onSend, disabled = false, placeholder = "Ask anything", showTopBorder = false, onFocusChange, inputFocused: controlledInputFocused }: ChatInputProps) {
   console.log('💬 ChatInput component LOADED');
   const [inputText, setInputText] = useState('');
-  const [inputFocused, setInputFocused] = useState(false);
+  const [localInputFocused, setLocalInputFocused] = useState(false);
+  
+  // Use controlled prop if provided, otherwise local state
+  const inputFocused = controlledInputFocused !== undefined ? controlledInputFocused : localInputFocused;
 
   const handleSend = async () => {
     if (disabled || !inputText.trim()) return;
@@ -67,12 +71,16 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
           onSubmitEditing={handleSend}
           onFocus={() => {
             console.log('🔍 TextInput onFocus - setting inputFocused to true');
-            setInputFocused(true);
+            if (controlledInputFocused === undefined) {
+              setLocalInputFocused(true);
+            }
             onFocusChange?.(true);
           }}
           onBlur={() => {
             console.log('🔍 TextInput onBlur - setting inputFocused to false');
-            setInputFocused(false);
+            if (controlledInputFocused === undefined) {
+              setLocalInputFocused(false);
+            }
             onFocusChange?.(false);
           }}
         />

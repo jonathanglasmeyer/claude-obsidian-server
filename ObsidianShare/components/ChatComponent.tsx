@@ -27,6 +27,8 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   const scrollViewRef = useRef(null);
   const insets = useSafeAreaInsets();
   const [inputFocused, setInputFocused] = useState(false);
+  const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   
   // Auto-detect server IP: Development builds or Expo Go
   const debuggerHost = Constants.debuggerHost?.split(':')[0] 
@@ -143,6 +145,26 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
     );
   }
   
+  // Keyboard event listeners to handle back-gesture dismiss
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+      setInputFocused(true);
+      console.log('⌨️ Keyboard shown, height:', e.endCoordinates.height);
+    });
+    
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+      setInputFocused(false);
+      console.log('⌨️ Keyboard hidden via system (back-gesture, etc.)');
+    });
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
   useEffect(() => {
     if (messages.length > 0) {
       setTimeout(() => {
@@ -223,6 +245,22 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
     }
   };
 
+  const handleScroll = (event) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    
+    // If content is shorter than visible area, we're always "at bottom"
+    if (contentSize.height <= layoutMeasurement.height) {
+      setIsScrolledToBottom(true);
+      return;
+    }
+    
+    // Check if user is scrolled to bottom (within 50px threshold)
+    const isAtBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 50;
+    
+    setIsScrolledToBottom(isAtBottom);
+    console.log('📜 Scroll position - isAtBottom:', isAtBottom, 'offset:', contentOffset.y);
+  };
+
   return (
     <KeyboardAvoidingView 
       behavior="padding" 
@@ -272,8 +310,9 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
         style={{ flex: 1, zIndex: 1, backgroundColor: '#fff' }} 
         contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="never"
-        onScrollBeginDrag={() => Keyboard.dismiss()}
+        keyboardShouldPersistTaps="handled"
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
         {messages.map((message, index) => {
           const messageKey = `msg-${index}-${message.id || 'no-id'}`;
@@ -350,8 +389,14 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
       <ChatInput
         onSend={handleSendMessage}
         disabled={status === 'streaming' || status === 'submitted'}
-        showTopBorder={true}
-        onFocusChange={setInputFocused}
+        showTopBorder={!isScrolledToBottom}
+        inputFocused={inputFocused}
+        onFocusChange={(focused) => {
+          // Only update if keyboard events haven't already set the state
+          if (keyboardHeight === 0 || !focused) {
+            setInputFocused(focused);
+          }
+        }}
       />
     </>
     </KeyboardAvoidingView>

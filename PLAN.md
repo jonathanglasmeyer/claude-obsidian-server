@@ -38,8 +38,14 @@ Official AI SDK v5 with DefaultChatTransport, proper polyfills, session persiste
 - context menu in drawer to rename & delete chats
 - chat bubble hoehe meiner nachrichten is zu hoch
 - text groesse im chat etwas klein
-- hairline beim composer nur wenn chat nach oben gescrollt (also invisible wenn ganz unten im chat)
+✅ **hairline beim composer nur wenn chat nach oben gescrollt (also invisible wenn ganz unten im chat)** - Conditional hairline with scroll position detection
+✅ **keyboard wird sehr schnell dismissed beim scrollen** - Removed aggressive onScrollBeginDrag dismiss, using keyboardShouldPersistTaps="handled"
+drawer:
+- press on hold macht n eckige selection
 - 'new chat' sollte welcome screen starten
+- '4 messges' muss sekundaerere color
+- swipe on main chat pane sollte drawer reinziehen
+
 ### 🚫 DEFERRED STEPS
 
 #### Step 4.2: Share Intent Configuration (DEFERRED)
