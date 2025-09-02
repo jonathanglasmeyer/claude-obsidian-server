@@ -3,8 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Platform, Pressable } from 'r
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import Constants from 'expo-constants';
-import { useSessions } from '@obsidian-bridge/shared-components';
+import { useSessionsContext } from '@obsidian-bridge/shared-components';
 import Svg, { Path } from 'react-native-svg';
 
 interface Session {
@@ -38,23 +37,11 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   
-  // Auto-detect server IP: Development builds or Expo Go
-  const debuggerHost = Constants.debuggerHost?.split(':')[0] 
-    || Constants.experienceUrl?.match(/exp:\/\/([^:]+)/)?.[1];
-    
-  if (!debuggerHost) {
-    console.error('❌ No server IP detected - use development build or Expo Go');
-  }
-  
-  const sessionConfig = {
-    apiBaseUrl: `http://${debuggerHost}:3001`,
-    platform: 'mobile' as const,
-  };
-  
+  // Use shared sessions context
   const {
     sessions,
     activeSessionId,
-  } = useSessions(sessionConfig);
+  } = useSessionsContext();
 
   const handleCreateSession = () => {
     navigation.navigate('StartNew' as never);

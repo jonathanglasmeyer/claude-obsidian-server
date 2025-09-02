@@ -226,8 +226,8 @@ async function startServer() {
       console.log('✅ Redis connected');
     }
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Server v2.0 running on port ${PORT}`);
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server v2.0 running on port ${PORT} (all interfaces)`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
       console.log(`💬 Direct AI SDK chat: POST http://localhost:${PORT}/api/chat`);
     });

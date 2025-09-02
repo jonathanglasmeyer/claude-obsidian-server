@@ -6,6 +6,8 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { PaperProvider } from 'react-native-paper';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Constants from 'expo-constants';
+import { SessionsProvider } from '@obsidian-bridge/shared-components';
 import { paperTheme, LightTheme } from './theme';
 import { StartNewScreen } from './screens/StartNewScreen';
 import { ChatScreen } from './screens/ChatScreen';
@@ -25,19 +27,34 @@ function MainStack() {
 }
 
 function AppContent() {
+  // Auto-detect server IP: Development builds or Expo Go
+  const debuggerHost = Constants.debuggerHost?.split(':')[0] 
+    || Constants.experienceUrl?.match(/exp:\/\/([^:]+)/)?.[1];
+    
+  if (!debuggerHost) {
+    console.error('❌ No server IP detected - use development build or Expo Go');
+  }
+  
+  const sessionConfig = {
+    apiBaseUrl: `http://${debuggerHost}:3001`,
+    platform: 'mobile' as const,
+  };
+
   return (
     <>
       <StatusBar style="dark" />
-      <Drawer.Navigator
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
-        screenOptions={{
-          drawerType: 'front',
-          swipeEdgeWidth: 32,
-          headerShown: false,
-        }}
-      >
-        <Drawer.Screen name="Main" component={MainStack} />
-      </Drawer.Navigator>
+      <SessionsProvider config={sessionConfig}>
+        <Drawer.Navigator
+          drawerContent={(props) => <CustomDrawerContent {...props} />}
+          screenOptions={{
+            drawerType: 'front',
+            swipeEdgeWidth: 32,
+            headerShown: false,
+          }}
+        >
+          <Drawer.Screen name="Main" component={MainStack} />
+        </Drawer.Navigator>
+      </SessionsProvider>
     </>
   );
 }

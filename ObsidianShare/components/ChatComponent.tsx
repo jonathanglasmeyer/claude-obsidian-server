@@ -30,6 +30,10 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   
+  // Stable ref for loadSessionMessages to avoid useEffect re-runs
+  const loadSessionMessagesRef = useRef(loadSessionMessages);
+  loadSessionMessagesRef.current = loadSessionMessages;
+  
   // Auto-detect server IP: Development builds or Expo Go
   const debuggerHost = Constants.debuggerHost?.split(':')[0] 
     || Constants.experienceUrl?.match(/exp:\/\/([^:]+)/)?.[1];
@@ -186,7 +190,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
       console.log('📥 Loading messages for sessionId:', sessionId);
       
       try {
-        const messages = await loadSessionMessages(sessionId);
+        const messages = await loadSessionMessagesRef.current(sessionId);
         
         if (!controller.signal.aborted) {
           const messagesWithIds = messages.map((msg, index) => ({
@@ -213,7 +217,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
     return () => {
       controller.abort();
     };
-  }, [pendingFirstMessage]);
+  }, [sessionId, pendingFirstMessage]);
 
   // Auto-send pending first message immediately when sendMessage becomes available
   useEffect(() => {

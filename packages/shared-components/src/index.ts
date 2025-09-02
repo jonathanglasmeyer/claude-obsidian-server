@@ -1,5 +1,6 @@
 // Hooks
 export { useSessions } from './hooks/use-sessions';
+export { SessionsProvider, useSessionsContext } from './hooks/SessionsProvider';
 
 // Types
 export type { 
