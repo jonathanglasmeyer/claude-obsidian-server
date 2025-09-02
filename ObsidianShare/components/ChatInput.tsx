@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { View, TextInput, Text } from 'react-native';
-import { BorderlessButton, GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { View, Text } from 'react-native';
+import { BorderlessButton, GestureDetector, Gesture, TextInput } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
@@ -40,52 +40,7 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
 
   console.log('🎨 ChatInput render - inputFocused:', inputFocused, 'paddingBottom:', inputFocused ? 8 : 24);
 
-  // Define focus function in JS thread scope for runOnJS
-  const focusTextInput = () => {
-    if (textInputRef.current) {
-      console.log('📱 Programmatically focusing TextInput');
-      textInputRef.current.focus();
-    }
-  };
-
-  // Create manual gesture to handle TextInput focus and parent gesture coordination  
-  const textInputManualGesture = Gesture.Manual()
-    .onTouchesDown((event, manager) => {
-      'worklet';
-      const touch = event.changedTouches[0];
-      touchStartPos.current = { x: touch.x, y: touch.y };
-      
-      console.log('🔥 Manual gesture onTouchesDown - focusing TextInput');
-      
-      // Always focus TextInput on touch down
-      runOnJS(focusTextInput)();
-    })
-    .onTouchesMove((event, manager) => {
-      'worklet';
-      if (!touchStartPos.current) return;
-      
-      const touch = event.changedTouches[0];
-      const deltaX = Math.abs(touch.x - touchStartPos.current.x);
-      const deltaY = Math.abs(touch.y - touchStartPos.current.y);
-      
-      // Only activate parent gesture if significant movement (likely swipe)
-      if (deltaX > 10 || deltaY > 10) {
-        console.log('🏃 Significant movement detected - activating parent gesture');
-        manager.activate();
-      }
-    })
-    .onTouchesUp((event, manager) => {
-      'worklet';
-      touchStartPos.current = null;
-      
-      // For simple taps, let TextInput handle - fail the gesture
-      if (manager.state === 1) { // BEGAN state
-        console.log('👆 Simple tap - letting TextInput handle');
-        manager.fail();
-      } else {
-        manager.end();
-      }
-    });
+  console.log('🧪 Using gesture-handler TextInput for native gesture coexistence');
 
   return (
     <View style={{
@@ -97,7 +52,6 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
       borderTopColor: '#e5e5e5',
       zIndex: 1
     }}>
-      <GestureDetector gesture={textInputManualGesture}>
           <View 
             style={{
               flexDirection: 'row',
@@ -162,7 +116,6 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
           </Svg>
         </BorderlessButton>
           </View>
-      </GestureDetector>
     </View>
   );
 }
