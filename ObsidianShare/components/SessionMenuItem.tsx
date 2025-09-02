@@ -57,6 +57,7 @@ export function SessionMenuItem({
             onLongPress={() => setMenuVisible(true)}
             onPressIn={() => setIsPressed(true)}
             onPressOut={() => setIsPressed(false)}
+            delayLongPress={400}
             style={({ pressed }) => [
               {
                 paddingHorizontal: 20,
@@ -74,6 +75,7 @@ export function SessionMenuItem({
             android_ripple={{
               color: 'rgba(103, 80, 164, 0.12)',
               borderless: false,
+              foreground: false,
             }}
           >
             <View style={{ flex: 1, justifyContent: 'center', paddingVertical: 2 }}>

@@ -41,8 +41,6 @@ Official AI SDK v5 with DefaultChatTransport, proper polyfills, session persiste
 ✅ **chat bubble hoehe meiner nachrichten is zu hoch** - Reduced user bubble paddingVertical from 12 to 4px, uniform 8px marginVertical
 ✅ **text groesse im chat etwas klein** - Increased chat text fontSize from 15 to 16px with proportional lineHeight
 
-drawer:
-- rename & delete chats
 
 
 ### 🚫 DEFERRED STEPS

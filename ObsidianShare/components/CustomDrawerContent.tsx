@@ -128,6 +128,7 @@ export function CustomDrawerContent({ onClose }: CustomDrawerContentProps) {
             android_ripple={{               // M3 ripple effect
               color: 'rgba(103, 80, 164, 0.12)',
               borderless: false,
+              foreground: false,
             }}
           >
           {/* M3 Leading Icon */}
@@ -183,7 +184,17 @@ export function CustomDrawerContent({ onClose }: CustomDrawerContentProps) {
       )}
 
       {/* Sessions List */}
-      <ScrollView style={{ flex: 1, paddingHorizontal: 8 }}>
+      <ScrollView 
+        style={{ flex: 1, paddingHorizontal: 8 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        scrollEventThrottle={16}
+        decelerationRate="normal"
+        bounces={true}
+        bouncesZoom={false}
+        alwaysBounceVertical={true}
+        directionalLockEnabled={true}
+      >
         {sessions.map((session) => (
           <SessionMenuItem
             key={session.id}
