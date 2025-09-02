@@ -52,18 +52,75 @@ export function ProgressiveDrawer({
     }
   };
 
+  // Track initial touch position for manual activation - use shared values for thread safety
+  const initialTouchX = useSharedValue(0);
+  const initialTouchY = useSharedValue(0);
+  const hasActivated = useSharedValue(false);
+
+  // Define logging functions OUTSIDE component scope (JS thread)
+  const debugLog = (message, data) => {
+    console.log(`[ProgressiveDrawer] ${message}:`, data);
+  };
+
+  const logTouchEvent = (eventType, x, y) => {
+    console.log(`[Touch] ${eventType}:`, { x, y });
+  };
+
   // Create separate pan gesture instances with proper tap coexistence
   const createPanGesture = () => Gesture.Pan()
-    .minDistance(15) // Require significant movement before activating
-    .activeOffsetX([-20, 20]) // Give more tolerance for tap gestures
-    .failOffsetY([-60, 60]) // Fail if too much vertical movement (likely scroll/tap)
-    .maxPointers(1) // Only single finger
-    .shouldCancelWhenOutside(false)
-    .minPointers(1)
-    .enableTrackpadTwoFingerGesture(false)
-    .runOnJS(true)
-    .onBegin(() => {
-      console.log('🟡 Pan gesture BEGIN (touch detected)');
+    .manualActivation(true)
+    .shouldCancelWhenOutside(false)  // Don't cancel when finger leaves the area
+    .cancelsTouchesInView(false)     // ✅ KEY: Don't cancel touches for native UI components (iOS)
+    .minDistance(15)                 // Only activate after significant movement
+    .blocksExternalGesture(false)    // Don't block child gestures
+    .simultaneousWithExternalGesture(true) // Allow simultaneous with child gestures
+    .onTouchesDown((event, manager) => {
+      'worklet';
+      // Store initial touch position
+      initialTouchX.value = event.allTouches[0].x;
+      initialTouchY.value = event.allTouches[0].y;
+      hasActivated.value = false;
+      
+      // ✅ Safe logging with predefined function
+      runOnJS(logTouchEvent)(
+        'onTouchesDown', 
+        initialTouchX.value.toFixed(1), 
+        initialTouchY.value.toFixed(1)
+      );
+    })
+    .onTouchesMove((event, manager) => {
+      'worklet';
+      if (hasActivated.value) return;
+
+      const currentX = event.allTouches[0].x;
+      const currentY = event.allTouches[0].y;
+      const deltaX = Math.abs(currentX - initialTouchX.value);
+      const deltaY = Math.abs(currentY - initialTouchY.value);
+      
+      runOnJS(debugLog)('onTouchesMove', { 
+        deltaX: deltaX.toFixed(1), 
+        deltaY: deltaY.toFixed(1) 
+      });
+      
+      // Activate only if significant horizontal movement with minimal vertical
+      if (deltaX > 25 && deltaX > deltaY * 1.5) {
+        runOnJS(debugLog)('ACTIVATING', 'swipe detected');
+        hasActivated.value = true;
+        manager.activate();
+      } else if (deltaY > 20) {
+        runOnJS(debugLog)('FAILING', 'vertical movement');
+        manager.fail();
+      }
+    })
+    .onTouchesUp(() => {
+      'worklet';
+      runOnJS(logTouchEvent)('onTouchesUp', 'touch released', '');
+      hasActivated.value = false;
+    })
+    .onTouchesCancelled(() => {
+      'worklet';
+      runOnJS(logTouchEvent)('onTouchesCancelled', 'cancelled', '');
+      hasActivated.value = false;
     })
     .onStart((event) => {
       console.log('🤏 Pan gesture STARTED:', {
@@ -74,14 +131,12 @@ export function ProgressiveDrawer({
         translationY: event.translationY.toFixed(1)
       });
     })
-    .onTouchesDown((event) => {
-      console.log('👇 Pan gesture TOUCHES DOWN:', {
-        numberOfTouches: event.numberOfTouches,
-        allTouchesX: event.allTouches.map(t => t.x.toFixed(1)),
-        allTouchesY: event.allTouches.map(t => t.y.toFixed(1))
-      });
-    })
     .onUpdate((event) => {
+      console.log('📈 Pan gesture UPDATE:', {
+        translationX: event.translationX.toFixed(1),
+        velocityX: event.velocityX.toFixed(1)
+      });
+      
       // Calculate progress based on current drawer state
       const currentOffset = isDrawerOpen.value ? DRAWER_WIDTH : 0;
       const newPosition = currentOffset + event.translationX;
@@ -139,11 +194,6 @@ export function ProgressiveDrawer({
         state: event.state,
         translationX: event.translationX?.toFixed(1) || 'N/A',
         velocityX: event.velocityX?.toFixed(1) || 'N/A'
-      });
-    })
-    .onTouchesUp((event) => {
-      console.log('👆 Pan gesture TOUCHES UP:', {
-        numberOfTouches: event.numberOfTouches
       });
     });
 
@@ -205,7 +255,7 @@ export function ProgressiveDrawer({
 
   return (
     <View style={styles.container}>
-      {/* Main content with gesture detection - configured to coexist with tap gestures */}
+      {/* Main content with gesture detection - but configured to share touches */}
       <GestureDetector gesture={contentPanGesture}>
         <Animated.View style={[styles.content, contentAnimatedStyle]}>
           {children}

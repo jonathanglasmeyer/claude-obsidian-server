@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text } from 'react-native';
+import { View, TextInput, Text } from 'react-native';
+import { BorderlessButton, GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Svg, { Path } from 'react-native-svg';
 
 interface ChatInputProps {
@@ -19,6 +20,7 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
   // Use controlled prop if provided, otherwise local state
   const inputFocused = controlledInputFocused !== undefined ? controlledInputFocused : localInputFocused;
 
+
   const handleSend = async () => {
     if (disabled || !inputText.trim()) return;
     
@@ -35,6 +37,14 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
 
   console.log('🎨 ChatInput render - inputFocused:', inputFocused, 'paddingBottom:', inputFocused ? 8 : 24);
 
+  // Create priority gesture for TextInput to override parent pan gesture
+  const textInputPriorityGesture = Gesture.Tap()
+    .shouldCancelWhenOutside(false)
+    .blocksExternalGesture(true)  // Block parent pan gesture
+    .onStart(() => {
+      console.log('⭐ TextInput priority gesture activated - blocking parent gestures');
+    });
+
   return (
     <View style={{
       paddingHorizontal: 16,
@@ -45,15 +55,18 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
       borderTopColor: '#e5e5e5',
       zIndex: 1
     }}>
-      <View style={{
-        flexDirection: 'row',
-        alignItems: 'flex-end',
-        backgroundColor: '#f6f6f6',
-        borderRadius: 20,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        maxHeight: 100,
-      }}>
+      <GestureDetector gesture={textInputPriorityGesture}>
+          <View 
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-end',
+              backgroundColor: '#f6f6f6',
+              borderRadius: 20,
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              maxHeight: 100,
+            }}
+          >
         <TextInput
           style={{
             flex: 1,
@@ -69,6 +82,8 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
           multiline
           blurOnSubmit={false}
           onSubmitEditing={handleSend}
+          onPressIn={() => console.log('📱 TextInput onPressIn')}
+          onPressOut={() => console.log('📱 TextInput onPressOut')}
           onFocus={() => {
             console.log('🔍 TextInput onFocus - setting inputFocused to true');
             if (controlledInputFocused === undefined) {
@@ -85,7 +100,7 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
           }}
         />
         
-        <TouchableOpacity
+        <BorderlessButton
           style={{
             marginLeft: 8,
             width: 28,
@@ -95,14 +110,15 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
             alignItems: 'center',
             justifyContent: 'center',
           }}
-          disabled={disabled || !inputText.trim()}
+          enabled={!disabled && !!inputText.trim()}
           onPress={handleSend}
         >
           <Svg width="16" height="16" viewBox="0 0 20 20" fill={inputText.trim() ? 'white' : '#666'}>
             <Path d="M8.99992 16V6.41407L5.70696 9.70704C5.31643 10.0976 4.68342 10.0976 4.29289 9.70704C3.90237 9.31652 3.90237 8.6835 4.29289 8.29298L9.29289 3.29298L9.36907 3.22462C9.76184 2.90427 10.3408 2.92686 10.707 3.29298L15.707 8.29298L15.7753 8.36915C16.0957 8.76192 16.0731 9.34092 15.707 9.70704C15.3408 10.0732 14.7618 10.0958 14.3691 9.7754L14.2929 9.70704L10.9999 6.41407V16C10.9999 16.5523 10.5522 17 9.99992 17C9.44764 17 8.99992 16.5523 8.99992 16Z" />
           </Svg>
-        </TouchableOpacity>
-      </View>
+        </BorderlessButton>
+          </View>
+      </GestureDetector>
     </View>
   );
 }
