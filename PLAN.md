@@ -26,14 +26,17 @@ Official AI SDK v5 with DefaultChatTransport, proper polyfills, session persiste
 ✅ React key warnings fixed with unique message/part identifiers
 ⏳ Component extraction (MessageBubble, ChatInput) to separate files
 
-#### Step 4.7: Core Chat Functionality ⭐ CURRENT PHASE
+#### Step 4.7: Core Chat Functionality ✅ COMPLETED
 ✅ Auto-scroll, pulsing animations, hardware keyboard, error handling
 ✅ **Modern header layout with 2025 safe area best practices**
 ✅ **Custom development build with native dependencies (react-native-safe-area-context)**
 ✅ **Professional ChatGPT-style UI with proper StatusBar handling**
 ✅ **M3-compliant sidebar with balanced spacing and world-class typography**
-✅ **Markdown rendering implemented** - MarkdownMessage component with comprehensive styling
-⏳ **TODO**: Component extraction
+✅ **Markdown rendering fully implemented** - MarkdownMessage component with comprehensive styling
+
+
+#### Step 4.8: Component Architecture Optimization ⭐ CURRENT PHASE
+⏳ **TODO**: Component extraction (MessageBubble, ChatInput) to separate files
 
 - Beim Start der App sollte nicht immer neuer Chat erstellt werden, sondern wir sollten so wie ChatGPT eine Art Input-Screen machen.welcomeScreen mit input. Wenn ich das ausfülle, dann kriege ich erst nach einer regulären Chat.
 ### 🚫 DEFERRED STEPS
