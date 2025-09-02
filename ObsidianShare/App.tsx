@@ -100,7 +100,7 @@ function AppContent() {
         sessions={sessions}
         activeSessionId={activeSessionId}
         onSelectSession={setActiveSessionId}
-        onCreateSession={() => createSession('New Chat')}
+        onCreateSession={() => setActiveSessionId(null)}
       />
     </View>
   );

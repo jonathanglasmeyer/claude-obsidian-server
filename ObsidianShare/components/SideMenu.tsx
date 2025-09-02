@@ -17,7 +17,7 @@ interface SideMenuProps {
   sessions: Session[];
   activeSessionId?: string;
   onSelectSession: (sessionId: string) => void;
-  onCreateSession: () => Promise<void>;
+  onCreateSession: () => void;
 }
 
 function generateConversationTitle(session: Session): string {
@@ -94,14 +94,10 @@ export function SideMenu({
             overflow: 'hidden',
           }}>
             <TouchableOpacity 
-              onPress={async () => {
-                console.log('Creating new chat');
-                try {
-                  await onCreateSession();
-                  onClose();
-                } catch (error) {
-                  console.error('Failed to create new chat:', error);
-                }
+              onPress={() => {
+                console.log('Starting new chat (welcome screen)');
+                onCreateSession();
+                onClose();
               }}
               accessible={true}
               accessibilityRole="button"
