@@ -3,7 +3,7 @@ import { View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Constants from 'expo-constants';
-import { useSessions } from '@obsidian-bridge/shared-components';
+import { useSessions } from '../hooks/use-sessions-local';
 import { useDrawerContext } from '../contexts/DrawerContext';
 import { ChatHeader } from '../components/ChatHeader';
 import { WelcomeScreen } from '../components/WelcomeScreen';

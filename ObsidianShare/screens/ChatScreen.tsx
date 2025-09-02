@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { useSessionsContext } from '@obsidian-bridge/shared-components';
+import { useSessionsContext } from '../components/SessionsProvider';
 import { useDrawerContext } from '../contexts/DrawerContext';
 import { ErrorBoundary, ChatErrorFallback } from '../ErrorBoundary';
 import { ChatHeader } from '../components/ChatHeader';
