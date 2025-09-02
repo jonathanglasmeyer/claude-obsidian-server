@@ -220,6 +220,44 @@ class SessionStore {
     }
   }
 
+  // Update chat (for rename etc.)
+  async updateChat(chatId, updates) {
+    if (this.connected) {
+      try {
+        const chatData = await this.client.get(`chat:${chatId}`);
+        if (!chatData) {
+          return null; // Chat not found
+        }
+        
+        const chat = JSON.parse(chatData);
+        
+        // Apply updates
+        Object.assign(chat, updates, { updatedAt: new Date().toISOString() });
+        
+        // Save back to Redis
+        await this.client.setEx(`chat:${chatId}`, 86400, JSON.stringify(chat));
+        
+        console.log(`✏️ Updated chat ${chatId}:`, Object.keys(updates));
+        return chat;
+      } catch (error) {
+        console.error('Error updating chat in Redis:', error);
+        return null;
+      }
+    } else {
+      // Update in memory
+      const chat = this.memoryChats.get(chatId);
+      if (!chat) {
+        return null;
+      }
+      
+      Object.assign(chat, updates, { updatedAt: new Date().toISOString() });
+      this.memoryChats.set(chatId, chat);
+      
+      console.log(`✏️ Updated chat ${chatId} (memory):`, Object.keys(updates));
+      return chat;
+    }
+  }
+
   // Delete chat
   async deleteChat(chatId) {
     if (this.connected) {

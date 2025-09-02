@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Platform, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Platform, Pressable, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { useSessionsContext } from '@obsidian-bridge/shared-components';
+import { useSessionsContext } from './SessionsProvider';
 import Svg, { Path } from 'react-native-svg';
+import { SessionMenuItem } from './SessionMenuItem';
+import { RenameSessionDialog } from './RenameSessionDialog';
 
 interface CustomDrawerContentProps {
   onClose?: () => void;
@@ -44,7 +46,13 @@ export function CustomDrawerContent({ onClose }: CustomDrawerContentProps) {
   const {
     sessions,
     activeSessionId,
+    deleteSession,
+    renameSession,
   } = useSessionsContext();
+
+  // Rename dialog state
+  const [renameDialogVisible, setRenameDialogVisible] = useState(false);
+  const [sessionToRename, setSessionToRename] = useState<string | null>(null);
 
   const handleCreateSession = () => {
     navigation.navigate('StartNew' as never);
@@ -54,6 +62,39 @@ export function CustomDrawerContent({ onClose }: CustomDrawerContentProps) {
   const handleSelectSession = (sessionId: string) => {
     navigation.navigate('Chat' as never, { sessionId } as never);
     if (onClose) onClose();
+  };
+
+  const handleRenameSession = (sessionId: string) => {
+    setSessionToRename(sessionId);
+    setRenameDialogVisible(true);
+  };
+
+  const handleConfirmRename = async (newTitle: string) => {
+    console.log('🔥 handleConfirmRename called with:', { sessionToRename, newTitle });
+    if (sessionToRename) {
+      console.log('🔥 About to call renameSession...');
+      await renameSession(sessionToRename, newTitle);
+      console.log('🔥 renameSession completed');
+      setSessionToRename(null);
+    }
+  };
+
+  const handleDeleteSession = (sessionId: string) => {
+    const session = sessions.find(s => s.id === sessionId);
+    const title = generateConversationTitle(session!);
+    
+    Alert.alert(
+      'Delete Chat',
+      `Are you sure you want to delete "${title}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: () => deleteSession(sessionId)
+        }
+      ]
+    );
   };
 
   return (
@@ -143,80 +184,31 @@ export function CustomDrawerContent({ onClose }: CustomDrawerContentProps) {
 
       {/* Sessions List */}
       <ScrollView style={{ flex: 1, paddingHorizontal: 8 }}>
-        {sessions.map((session) => {
-          const SessionItem = ({ children, ...props }) => {
-            const [isPressed, setIsPressed] = useState(false);
-            
-            return (
-              <View style={{
-                borderRadius: 28,
-                marginHorizontal: 8,
-                marginVertical: 4,
-                overflow: 'hidden',
-              }}>
-                <Pressable
-                  onPressIn={() => setIsPressed(true)}
-                  onPressOut={() => setIsPressed(false)}
-                  style={({ pressed }) => [
-                    {
-                      paddingHorizontal: 20,
-                      paddingVertical: 8,
-                      minHeight: 56,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      backgroundColor: session.id === activeSessionId 
-                        ? 'rgba(103, 80, 164, 0.08)'  // Active
-                        : (pressed || isPressed) 
-                          ? 'rgba(103, 80, 164, 0.04)'  // Hover/Press
-                          : 'rgba(0, 0, 0, 0.02)',      // Subtle default for usability
-                    }
-                  ]}
-                  android_ripple={{
-                    color: 'rgba(103, 80, 164, 0.12)',
-                    borderless: false,
-                  }}
-                  {...props}
-                >
-                  {children}
-                </Pressable>
-              </View>
-            );
-          };
-
-          return (
-            <SessionItem
-              key={session.id}
-              onPress={() => handleSelectSession(session.id)}
-            >
-              <View style={{ flex: 1, justifyContent: 'center', paddingVertical: 2 }}>
-                <Text style={{
-                  fontSize: 15,
-                  fontWeight: '600',               // Semi-bold weight
-                  color: session.id === activeSessionId ? 'rgb(124, 58, 237)' : '#1D1B20',
-                  lineHeight: 20,
-                  letterSpacing: 0.1,
-                  fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'SF Pro Display Medium',
-                }}>
-                  {generateConversationTitle(session)}
-                </Text>
-                {session.messageCount > 0 && (
-                  <Text style={{
-                    fontSize: 14,
-                    fontWeight: '400',
-                    color: '#79747E',
-                    lineHeight: 16,
-                    letterSpacing: 0.25,
-                    marginTop: 2,
-                    fontFamily: Platform.OS === 'android' ? 'Roboto' : 'SF Pro Display',
-                  }}>
-                    {session.messageCount} messages
-                  </Text>
-                )}
-              </View>
-            </SessionItem>
-          );
-        })}
+        {sessions.map((session) => (
+          <SessionMenuItem
+            key={session.id}
+            session={session}
+            isActive={session.id === activeSessionId}
+            onPress={() => handleSelectSession(session.id)}
+            onRename={handleRenameSession}
+            onDelete={handleDeleteSession}
+            generateConversationTitle={generateConversationTitle}
+          />
+        ))}
       </ScrollView>
+
+      {/* Rename Dialog */}
+      {sessionToRename && (
+        <RenameSessionDialog
+          visible={renameDialogVisible}
+          currentTitle={generateConversationTitle(sessions.find(s => s.id === sessionToRename)!)}
+          onDismiss={() => {
+            setRenameDialogVisible(false);
+            setSessionToRename(null);
+          }}
+          onConfirm={handleConfirmRename}
+        />
+      )}
     </View>
   );
 }

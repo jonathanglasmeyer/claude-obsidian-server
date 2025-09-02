@@ -42,11 +42,8 @@ Official AI SDK v5 with DefaultChatTransport, proper polyfills, session persiste
 ✅ **text groesse im chat etwas klein** - Increased chat text fontSize from 15 to 16px with proportional lineHeight
 
 drawer:
-- press on hold macht n eckige selection
-- 'new chat' sollte welcome screen starten
-- '4 messges' muss sekundaerere color
-- swipe on main chat pane sollte drawer reinziehen
 - rename & delete chats
+
 
 ### 🚫 DEFERRED STEPS
 

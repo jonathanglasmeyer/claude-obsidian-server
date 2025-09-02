@@ -7,7 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { PaperProvider } from 'react-native-paper';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Constants from 'expo-constants';
-import { SessionsProvider } from '@obsidian-bridge/shared-components';
+import { SessionsProvider } from './components/SessionsProvider';
 import { paperTheme, LightTheme } from './theme';
 import { StartNewScreen } from './screens/StartNewScreen';
 import { ChatScreen } from './screens/ChatScreen';

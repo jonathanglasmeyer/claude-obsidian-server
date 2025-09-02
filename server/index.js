@@ -38,6 +38,7 @@ app.get('/', (req, res) => {
       chats: '/api/chats - List all chats',
       createChat: '/api/chats (POST) - Create new chat',
       chatMessages: '/api/chats/:id/messages - Get chat history',
+      updateChat: '/api/chats/:id (PUT) - Update chat (rename)',
       deleteChat: '/api/chats/:id (DELETE) - Delete chat'
     }
   });
@@ -194,6 +195,31 @@ app.get('/api/chats/:id/messages', async (req, res) => {
   } catch (error) {
     console.error('❌ Error getting chat messages:', error);
     res.status(500).json({ error: 'Failed to get chat messages' });
+  }
+});
+
+// Update chat (for rename)
+app.put('/api/chats/:id', async (req, res) => {
+  try {
+    const chatId = req.params.id;
+    const updates = req.body;
+    
+    // Validate updates
+    if (!updates || Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'Updates are required' });
+    }
+    
+    const updatedChat = await sessionStore.updateChat(chatId, updates);
+    
+    if (!updatedChat) {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
+    
+    console.log('✏️ Updated chat:', chatId, Object.keys(updates));
+    res.json(updatedChat);
+  } catch (error) {
+    console.error('❌ Error updating chat:', error);
+    res.status(500).json({ error: 'Failed to update chat' });
   }
 });
 
