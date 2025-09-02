@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Image } from 'react-native';
 import { ChatInput } from './ChatInput';
 
 interface WelcomeScreenProps {
@@ -23,28 +23,22 @@ export function WelcomeScreen({ onFirstMessage }: WelcomeScreenProps) {
           alignItems: 'center',
           marginBottom: 40
         }}>
+          <Image 
+            source={require('../assets/obsidian logo.png')}
+            style={{
+              width: 64,
+              height: 64,
+              marginBottom: 24
+            }}
+          />
           <Text style={{
-            fontSize: 32,
-            marginBottom: 16
-          }}>
-            🤖
-          </Text>
-          <Text style={{
-            fontSize: 24,
-            fontWeight: '600',
-            color: '#333',
-            marginBottom: 8,
-            textAlign: 'center'
-          }}>
-            Obsidian Chat
-          </Text>
-          <Text style={{
-            fontSize: 16,
-            color: '#666',
+            fontSize: 22,
+            fontWeight: '500',
+            color: '#000',
             textAlign: 'center',
-            lineHeight: 24
+            lineHeight: 28
           }}>
-            What can I help you with today?
+            What's on your mind?
           </Text>
         </View>
       </View>
