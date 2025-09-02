@@ -1,40 +1,46 @@
-// polyfills.js - Official AI SDK React Native Support
+// polyfills.js - Official AI SDK React Native Support (Official Pattern)
 import { Platform } from 'react-native';
 import structuredClone from '@ungap/structured-clone';
 
 console.log('🔧 Setting up official AI SDK React Native polyfills...');
 
-// Setup structuredClone (required by AI SDK)
-if (!global.structuredClone) {
-  global.structuredClone = structuredClone;
-  console.log('✅ structuredClone polyfill installed');
-}
-
-// Setup streaming text encoding for React Native
-const setupStreamPolyfills = async () => {
-  if (Platform.OS !== 'web') {
+if (Platform.OS !== 'web') {
+  const setupPolyfills = async () => {
     try {
+      const { polyfillGlobal } = await import(
+        'react-native/Libraries/Utilities/PolyfillFunctions'
+      );
+
       const { TextEncoderStream, TextDecoderStream } = await import(
         '@stardazed/streams-text-encoding'
       );
-      
-      if (!global.TextEncoderStream) {
-        global.TextEncoderStream = TextEncoderStream;
-        console.log('✅ TextEncoderStream polyfill installed');
+
+      if (!('structuredClone' in global)) {
+        polyfillGlobal('structuredClone', () => structuredClone);
+        console.log('✅ structuredClone polyfill installed (official pattern)');
       }
+
+      polyfillGlobal('TextEncoderStream', () => TextEncoderStream);
+      console.log('✅ TextEncoderStream polyfill installed (official pattern)');
       
-      if (!global.TextDecoderStream) {
-        global.TextDecoderStream = TextDecoderStream;
-        console.log('✅ TextDecoderStream polyfill installed');
-      }
+      polyfillGlobal('TextDecoderStream', () => TextDecoderStream);
+      console.log('✅ TextDecoderStream polyfill installed (official pattern)');
       
     } catch (error) {
-      console.warn('⚠️ Streaming polyfills not available:', error.message);
+      console.warn('⚠️ Official polyfills setup failed:', error.message);
+      // Fallback to direct assignment
+      if (!global.structuredClone) {
+        global.structuredClone = structuredClone;
+        console.log('✅ structuredClone fallback installed');
+      }
     }
-  }
-};
+  };
 
-// Setup polyfills asynchronously
-setupStreamPolyfills();
+  setupPolyfills();
+} else {
+  console.log('📱 Web platform detected - skipping mobile polyfills');
+}
 
 console.log('✅ Official AI SDK React Native polyfills ready');
+
+export {};

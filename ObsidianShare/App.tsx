@@ -15,6 +15,7 @@ import {
   useSessions
 } from '@obsidian-bridge/shared-components';
 import { ErrorBoundary, ChatErrorFallback } from './ErrorBoundary';
+import { PulsingDots } from './components/PulsingDots';
 
 // Modern ChatGPT-style message bubbles
 function MessageBubble({ role, children }) {
@@ -70,6 +71,7 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
   
   const [inputText, setInputText] = useState('');
   const [chatError, setChatError] = useState(null);
+  const scrollViewRef = useRef(null);
   
   const sessionConfig = {
     apiBaseUrl: 'http://192.168.178.147:3001', // Use localhost for local development testing
@@ -125,6 +127,39 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
     setMessages 
   } = chatHook;
   
+  // Simple error fallback (like official docs)
+  if (error) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <Text style={{ color: '#dc2626', fontSize: 16, textAlign: 'center' }}>
+          {error.message}
+        </Text>
+        <TouchableOpacity 
+          style={{ 
+            marginTop: 16, 
+            backgroundColor: '#dc2626', 
+            paddingHorizontal: 16, 
+            paddingVertical: 8, 
+            borderRadius: 6 
+          }}
+          onPress={() => window.location.reload?.() || console.log('Reload needed')}
+        >
+          <Text style={{ color: 'white', fontWeight: '600' }}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+  
+  // Auto-scroll to bottom when messages change (ChatGPT style)
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Smooth scroll for new messages
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [messages.length, status]); // Also trigger on status change for streaming
+
   // Load session messages when component mounts (same as web prototype)
   useEffect(() => {
     const controller = new AbortController();
@@ -143,6 +178,11 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
           }));
           console.log('✅ Loaded', messagesWithIds.length, 'messages, setting to useChat');
           setMessages([...messagesWithIds]);
+          
+          // Initial scroll to bottom (no animation for loaded messages)
+          setTimeout(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: false });
+          }, 50);
         }
       } catch (error) {
         if (!controller.signal.aborted) {
@@ -199,20 +239,70 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
 
       {/* Messages */}
       <ScrollView 
+        ref={scrollViewRef}
         style={{ flex: 1, zIndex: 1, backgroundColor: '#fff' }} 
         contentContainerStyle={{ paddingBottom: 20 }}
+        showsVerticalScrollIndicator={false}
       >
         <Text style={{ color: '#999', padding: 16 }}>Messages count: {messages.length}</Text>
         {messages.map((message, index) => (
           <MessageBubble key={message.id || index} role={message.role}>
-            {message.parts?.map(part => part.text || (typeof part === 'string' ? part : '')).join('') || ''}
+            {message.parts?.map((part, i) => {
+              const partKey = `${message.id || index}-${i}`;
+              
+              switch (part.type) {
+                case 'text':
+                  return <Text key={partKey}>{part.text}</Text>;
+                
+                // Step metadata - don't render (like web prototype)
+                case 'step-start':
+                case 'step-finish':
+                  return null;
+                
+                // Tool visualizations (future: replace with proper components)
+                case 'tool-Read':
+                case 'tool-Write':
+                case 'tool-Edit':
+                case 'tool-Bash':
+                case 'tool-Grep':
+                case 'tool-Glob':
+                  return (
+                    <View key={partKey} style={{ 
+                      backgroundColor: '#f0f8ff', 
+                      padding: 8, 
+                      marginVertical: 4, 
+                      borderRadius: 6,
+                      borderLeftWidth: 3,
+                      borderLeftColor: '#007AFF'
+                    }}>
+                      <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#007AFF', marginBottom: 4 }}>
+                        🛠️ {part.type.replace('tool-', '')}
+                      </Text>
+                      <Text style={{ fontSize: 10, fontFamily: 'monospace', color: '#666' }}>
+                        {JSON.stringify(part, null, 2)}
+                      </Text>
+                    </View>
+                  );
+                
+                default:
+                  // Fallback for any unknown part types
+                  if (typeof part === 'string') {
+                    return <Text key={partKey}>{part}</Text>;
+                  }
+                  return (
+                    <Text key={partKey} style={{ fontStyle: 'italic', color: '#999' }}>
+                      [Unknown part type: {part.type || typeof part}]
+                    </Text>
+                  );
+              }
+            }) || <Text>[No content]</Text>}
           </MessageBubble>
         ))}
         
-        {/* Loading indicator */}
-        {(status === 'streaming' || status === 'submitted') && (
+        {/* Loading indicator - ChatGPT style pulsing dots */}
+        {status === 'submitted' && (
           <MessageBubble role="assistant">
-            <Text style={{ fontStyle: 'italic', color: '#666' }}>Typing...</Text>
+            <PulsingDots />
           </MessageBubble>
         )}
         
@@ -255,10 +345,31 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
               paddingVertical: 8,
             }}
             value={inputText}
-            onChangeText={setInputText}
+            onChange={e => setInputText(e.nativeEvent.text)}
             placeholder="Ask anything"
             placeholderTextColor="#999"
             multiline
+            blurOnSubmit={false}
+            onSubmitEditing={() => {
+              // Hardware keyboard support (like official docs)
+              if (inputText.trim() && status !== 'streaming' && status !== 'submitted') {
+                const messageToSend = inputText.trim();
+                setInputText('');
+                
+                (async () => {
+                  try {
+                    if (sendMessage) {
+                      await sendMessage({ text: messageToSend });
+                    } else {
+                      setInputText(messageToSend);
+                    }
+                  } catch (error) {
+                    console.error('❌ Error via onSubmitEditing:', error);
+                    setInputText(messageToSend);
+                  }
+                })();
+              }
+            }}
           />
           
           {/* Send/Mic Button */}

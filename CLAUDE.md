@@ -99,6 +99,41 @@ REDIS_URL                     # Optional, falls back to memory
 - **Tool visualization**: File operations shown in collapsible UI cards
 - **Professional UX**: AI Elements components, custom avatars, loading states
 
+## Development Guidelines
+
+### React Native App Component Organization (`ObsidianShare/`)
+- **Separate Components:** Extract reusable components into individual files in `ObsidianShare/components/` directory
+- **File Naming:** Use PascalCase for component files (e.g., `PulsingDots.tsx`, `MessageBubble.tsx`)
+- **Clean Imports:** Import from dedicated component files instead of inline definitions in `App.tsx`
+- **Single Responsibility:** Each component file should contain one primary component
+- **TypeScript:** All component files should use `.tsx` extension with proper typing
+
+### React Native Code Organization Pattern
+```typescript
+// ❌ Bad: Inline component definitions in App.tsx
+function App() {
+  function PulsingDots() { /* animation logic */ }
+  function MessageBubble() { /* message rendering */ }
+  return <View>...</View>;
+}
+
+// ✅ Good: Separate component files
+// ObsidianShare/components/PulsingDots.tsx
+export function PulsingDots() { /* animation logic */ }
+
+// ObsidianShare/components/MessageBubble.tsx  
+export function MessageBubble() { /* message rendering */ }
+
+// ObsidianShare/App.tsx
+import { PulsingDots } from './components/PulsingDots';
+import { MessageBubble } from './components/MessageBubble';
+function App() {
+  return <View>...</View>;
+}
+```
+
+**Note:** This pattern applies specifically to the React Native mobile app. Web prototype and server components follow their own organization patterns.
+
 ## Development Workflow
 
 ### Local Development (Recommended)
