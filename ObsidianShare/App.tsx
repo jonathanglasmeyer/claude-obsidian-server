@@ -4,10 +4,10 @@ import {
   Text, 
   TextInput, 
   TouchableOpacity, 
-  ScrollView,
-  SafeAreaView,
-  StatusBar
+  ScrollView
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { fetch as expoFetch } from 'expo/fetch';
@@ -244,7 +244,6 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
         contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={{ color: '#999', padding: 16 }}>Messages count: {messages.length}</Text>
         {messages.map((message, index) => {
           // Create unique key by combining message ID/index with message content hash
           const messageKey = `msg-${index}-${message.id || 'no-id'}`;
@@ -442,9 +441,10 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
   );
 }
 
-// 🔑 Main App Component (like Web Prototype page.tsx)
-export default function App() {
+// 🔑 Main App Content (extracted for SafeAreaProvider)
+function AppContent() {
   const [sideMenuVisible, setSideMenuVisible] = useState(false);
+  const insets = useSafeAreaInsets();
   
   // Initialize sessions hook with React Native config
   const sessionConfig = {
@@ -466,11 +466,15 @@ export default function App() {
 
   console.log('🏠 Main App render - sessions:', sessions.length, 'activeSessionId:', activeSessionId, 'activeSession:', activeSession?.title);
 
-
   // Show loading while sessions are being loaded
   if (!isInitialized) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ 
+        flex: 1, 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        paddingTop: insets.top 
+      }}>
         <Text style={{ color: '#666' }}>Loading sessions...</Text>
       </View>
     );
@@ -479,7 +483,12 @@ export default function App() {
   // Show session selector if no active session
   if (!activeSessionId) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ 
+        flex: 1, 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        paddingTop: insets.top 
+      }}>
         <Text style={{ color: '#666', marginBottom: 16 }}>No active session</Text>
         <TouchableOpacity 
           onPress={async () => {
@@ -501,17 +510,21 @@ export default function App() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <StatusBar style="dark" />
         
-        {/* Modern Header */}
+        {/* Modern Header with Safe Area */}
         <View style={{ 
+          paddingTop: insets.top,
           paddingHorizontal: 16,
           paddingVertical: 12,
           borderBottomWidth: 1,
           borderBottomColor: '#f0f0f0',
           backgroundColor: '#fff',
-          zIndex: 1
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.1,
+          shadowRadius: 3,
+          elevation: 3
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity 
@@ -567,10 +580,9 @@ export default function App() {
             loadSessionMessages={loadSessionMessages}
           />
         </ErrorBoundary>
-      </SafeAreaView>
 
-      {/* Backdrop */}
-      {sideMenuVisible && (
+        {/* Backdrop */}
+        {sideMenuVisible && (
         <TouchableOpacity
           style={{
             position: 'absolute',
@@ -698,5 +710,14 @@ export default function App() {
         </View>
       )}
     </View>
+  );
+}
+
+// 🔑 Main App Component with SafeAreaProvider
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AppContent />
+    </SafeAreaProvider>
   );
 }

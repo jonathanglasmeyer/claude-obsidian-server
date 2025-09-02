@@ -23,7 +23,8 @@
     "react-native": "0.79.6",
     "react-native-fetch-api": "^3.0.0",
     "react-native-markdown-display": "^7.0.2",
-    "react-native-polyfill-globals": "^3.1.0"
+    "react-native-polyfill-globals": "^3.1.0",
+    "react-native-safe-area-context": "^5.6.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
