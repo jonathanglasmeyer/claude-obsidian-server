@@ -45,11 +45,11 @@ export function ChatHeader({ title, onMenuPress, onMorePress }: ChatHeaderProps)
         {/* Title */}
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <Text style={{ 
-            fontSize: 18,
-            fontWeight: '450',
+            fontSize: 17,
+            fontWeight: 'normal',
             lineHeight: 22,
             color: '#000000',
-            fontFamily: Platform.OS === 'ios' ? 'SF Pro Display' : 'sans-serif',
+            fontFamily: Platform.OS === 'ios' ? 'SF Pro Display Medium' : 'sans-serif-medium',
             letterSpacing: 0,
           }}>
             {title}
