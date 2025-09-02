@@ -2,16 +2,17 @@ import React, { useState } from 'react';
 import { View, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
 import Constants from 'expo-constants';
 import { useSessions } from '@obsidian-bridge/shared-components';
+import { useDrawerContext } from '../contexts/DrawerContext';
 import { ChatHeader } from '../components/ChatHeader';
 import { WelcomeScreen } from '../components/WelcomeScreen';
 
 export function StartNewScreen() {
   const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<DrawerNavigationProp<any>>();
+  const navigation = useNavigation();
+  const { openDrawer } = useDrawerContext();
   
   // Auto-detect server IP: Development builds or Expo Go
   const debuggerHost = Constants.debuggerHost?.split(':')[0] 
@@ -59,7 +60,7 @@ export function StartNewScreen() {
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <ChatHeader
         title="Obsidian Chat"
-        onMenuPress={() => navigation.openDrawer()}
+        onMenuPress={() => openDrawer()}
         onMorePress={() => {}}
       />
       <WelcomeScreen onFirstMessage={handleFirstMessage} />

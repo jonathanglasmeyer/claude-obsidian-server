@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Platform, Pressable } from 'react-native';
-import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useSessionsContext } from '@obsidian-bridge/shared-components';
 import Svg, { Path } from 'react-native-svg';
+
+interface CustomDrawerContentProps {
+  onClose?: () => void;
+}
 
 interface Session {
   id: string;
@@ -33,7 +36,7 @@ function generateConversationTitle(session: Session): string {
   }
 }
 
-export function CustomDrawerContent(props: DrawerContentComponentProps) {
+export function CustomDrawerContent({ onClose }: CustomDrawerContentProps) {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   
@@ -45,12 +48,12 @@ export function CustomDrawerContent(props: DrawerContentComponentProps) {
 
   const handleCreateSession = () => {
     navigation.navigate('StartNew' as never);
-    props.navigation.closeDrawer();
+    if (onClose) onClose();
   };
 
   const handleSelectSession = (sessionId: string) => {
     navigation.navigate('Chat' as never, { sessionId } as never);
-    props.navigation.closeDrawer();
+    if (onClose) onClose();
   };
 
   return (

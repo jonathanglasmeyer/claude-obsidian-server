@@ -1,15 +1,16 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { useSessionsContext } from '@obsidian-bridge/shared-components';
+import { useDrawerContext } from '../contexts/DrawerContext';
 import { ErrorBoundary, ChatErrorFallback } from '../ErrorBoundary';
 import { ChatHeader } from '../components/ChatHeader';
 import { ChatComponent } from '../components/ChatComponent';
 
 export function ChatScreen() {
   const route = useRoute();
-  const navigation = useNavigation<DrawerNavigationProp<any>>();
+  const navigation = useNavigation();
+  const { openDrawer } = useDrawerContext();
   const { sessionId, pendingFirstMessage } = route.params as { sessionId: string; pendingFirstMessage?: string };
   
   // Use shared sessions context
@@ -31,13 +32,13 @@ export function ChatScreen() {
 
   const currentSession = sessions.find(s => s.id === sessionId);
 
-  console.log('💬 ChatScreen render - sessionId:', sessionId, 'navigation available:', !!navigation.openDrawer);
+  console.log('💬 ChatScreen render - sessionId:', sessionId, 'drawer context available:', !!openDrawer);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <ChatHeader
         title={currentSession?.title || 'Chat'}
-        onMenuPress={() => navigation.openDrawer()}
+        onMenuPress={() => openDrawer()}
         onMorePress={() => {}}
       />
       

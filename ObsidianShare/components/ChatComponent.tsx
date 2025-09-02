@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { fetch as expoFetch } from 'expo/fetch';
@@ -29,6 +30,19 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   const [inputFocused, setInputFocused] = useState(false);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  
+  // Fade in animation
+  const fadeOpacity = useSharedValue(0);
+  
+  // Trigger fade in when sessionId changes
+  useEffect(() => {
+    fadeOpacity.value = 0; // Start invisible
+    fadeOpacity.value = withTiming(1, { duration: 300 }); // Fade in over 300ms
+  }, [sessionId]);
+  
+  const fadeAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: fadeOpacity.value,
+  }));
   
   // Stable ref for loadSessionMessages to avoid useEffect re-runs
   const loadSessionMessagesRef = useRef(loadSessionMessages);
@@ -265,13 +279,14 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
     console.log('📜 Scroll position - isAtBottom:', isAtBottom, 'offset:', contentOffset.y);
   };
 
+
   return (
-    <KeyboardAvoidingView 
-      behavior="padding" 
-      enabled={inputFocused}
-      style={{ flex: 1 }}
-    >
-      <>
+    <Animated.View style={[{ flex: 1 }, fadeAnimatedStyle]}>
+      <KeyboardAvoidingView 
+        behavior="padding" 
+        enabled={inputFocused}
+        style={{ flex: 1 }}
+      >
       {/* Error Display */}
       {chatError && (
         <View style={{ 
@@ -402,7 +417,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
           }
         }}
       />
-    </>
     </KeyboardAvoidingView>
+    </Animated.View>
   );
 }
