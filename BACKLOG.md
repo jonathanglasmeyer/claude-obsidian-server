@@ -1,14 +1,15 @@
-# More robust best-practice components
-- Pakete: installiere `@react-navigation/native`, `@react-navigation/native-stack`, `@react-navigation/drawer`, `react-native-gesture-handler`, `react-native-reanimated`, `react-native-safe-area-context`, `react-native-paper`.
-- Theme: Erzeuge ein zentrales MD3-Theme (Paper) und leite daraus das Navigation-Theme ab (`adaptNavigationTheme`); `PaperProvider` um `NavigationContainer` legen.
-- Root-Layout: Erstelle **einen** `DrawerNavigator` als Root; darin liegt **ein** `NativeStack` mit zwei Routen: `StartNew` (Startscreen mit Composer) und `Chat` (Detail).
-- Drawer als Side-Sheet: `drawerContent` rendert deine Paper-Liste (Suche, Pinned, Ungelesen, Recent); keine zusätzliche App-Bar im Drawer, die globale Top-App-Bar bleibt sichtbar.
-- Breakpoints: Auf Phone `drawerType: 'front'`, `swipeEdgeWidth: 24–32`, `overlayColor` aus dem Theme; ab ~840dp Breite auf `permanent` schalten und die Liste persistent links zeigen.
-- Navigation-Logik: Tippen auf einen Eintrag → `navigation.navigate('Chat', {id})`; „Neuer Chat“ im Drawer nur als erster Listeneintrag oder als kleiner Action unten, da der Startscreen bereits die Primärhandlung ist.
-- Composer-Suche: Der Text im Composer durchsucht **dieselbe** Datenquelle wie der Drawer; bei Fokus auf den Composer darfst du `navigation.openDrawer()` triggern und Treffer live filtern; Enter → neuen Thread starten, erster Treffer → „Weiter in ‹Thread›“.
-- Zustände: Pinned hat Priorität, Ungelesen mit Badge/Typo, Recent nach „zuletzt aktiv“; alles aus einer zentralen Store-Schicht (z. B. Zustand/Jotai) für Drawer **und** Screens.
-- Back-/Focus-Verhalten: Android-Back schließt zuerst den Drawer; Fokusfalle aktiv, solange der Drawer offen ist (A11y); `useDrawerStatus()` nutzen, um Peek/Expanded-Zustände zu steuern.
-- Listen-Performance: Drawer-Liste als `FlatList/FlashList` mit SectionHeadern („Pinned“, „Ungelesen“, „Zuletzt“), 48dp Item-Height, Avatare/Icons als Leading-Elemente, einzeilige Preview als Secondary-Text.
-- Motion: Standard-Slide des Drawers belassen; für den Wechsel Liste → Chat optional Shared-Element/Container-Transform (Titel/Avatar) via `react-navigation-shared-element` oder einfacher Fade+Scale.
-- A11y: `accessibilityRole="button"` für Items, `accessibilityState={{selected, busy}}` wo passend, „Ungelesen“ auch angesagt, nicht nur visuell; Touch-Ziele ≥48dp.
-- Testmatrix: Phone Portrait (modaler Drawer), Tablet Landscape (permanent), Hardware-Back, Gesten vom Rand, Tastatur (Cmd/Ctrl-K für Quick-Switch, Pfeiltasten durch Treffer, Esc schließt Drawer).
+# Drawer Navigation Refactoring - Inkrementelle Schritte
+
+## Phase 1: Core Navigation Setup
+- [ ] **Packages installieren**: `@react-navigation/native`, `@react-navigation/native-stack`, `@react-navigation/drawer`, `react-native-gesture-handler`, `react-native-reanimated`, `react-native-safe-area-context`, `react-native-paper`
+- [ ] **Theme Setup**: MD3-Theme (Paper) mit `adaptNavigationTheme`; `PaperProvider` um `NavigationContainer`
+- [ ] **Basic Architecture**: DrawerNavigator als Root mit NativeStack (StartNew + Chat routen)
+
+## Phase 2: Drawer Content & Behavior
+- [ ] **Custom Drawer Content**: `drawerContent` mit Paper-Liste (keine extra App-Bar)
+- [ ] **Phone Setup**: `drawerType: 'front'`, `swipeEdgeWidth: 24-32`
+- [ ] **Navigation Logic**: Tap → `navigation.navigate('Chat', {id})`
+
+## Phase 2.5: ChatGPT-style Gestures
+- [ ] **Content Drag Gesture**: Swipe right auf main chat content öffnet drawer (nicht nur edge swipe)
+- [ ] **Natural Slide Motion**: Standard drawer slide animation (vermutlich schon default)
