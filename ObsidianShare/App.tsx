@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Constants from 'expo-constants';
 import { useSessions } from '@obsidian-bridge/shared-components';
 import { ErrorBoundary, ChatErrorFallback } from './ErrorBoundary';
 import { ChatHeader } from './components/ChatHeader';
@@ -15,8 +16,16 @@ function AppContent() {
   const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   
+  // Auto-detect server IP: Development builds or Expo Go
+  const debuggerHost = Constants.debuggerHost?.split(':')[0] 
+    || Constants.experienceUrl?.match(/exp:\/\/([^:]+)/)?.[1];
+    
+  if (!debuggerHost) {
+    console.error('❌ No server IP detected - use development build or Expo Go');
+  }
+  
   const sessionConfig = {
-    apiBaseUrl: 'http://192.168.178.147:3001',
+    apiBaseUrl: `http://${debuggerHost}:3001`,
     platform: 'mobile' as const,
   };
   

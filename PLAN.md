@@ -36,6 +36,10 @@ Official AI SDK v5 with DefaultChatTransport, proper polyfills, session persiste
 ✅ **ChatGPT-style welcome screen** - App starts fresh without active chat, optimistic message display, automatic title generation from first message (30 char limit, real-time sidebar updates) ✅ COMPLETE
 
 - context menu in drawer to rename & delete chats
+- chat bubble hoehe meiner nachrichten is zu hoch
+- text groesse im chat etwas klein
+- hairline beim composer nur wenn chat nach oben gescrollt (also invisible wenn ganz unten im chat)
+- 'new chat' sollte welcome screen starten
 ### 🚫 DEFERRED STEPS
 
 #### Step 4.2: Share Intent Configuration (DEFERRED)

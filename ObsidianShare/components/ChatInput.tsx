@@ -35,7 +35,7 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
     <View style={{
       paddingHorizontal: 16,
       paddingTop: 8,
-      paddingBottom: inputFocused ? 8 : 24,
+      paddingBottom: inputFocused ? 8 : 32,
       backgroundColor: '#fff',
       borderTopWidth: showTopBorder ? 1 : 0,
       borderTopColor: '#e5e5e5',

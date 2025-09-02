@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { fetch as expoFetch } from 'expo/fetch';
+import Constants from 'expo-constants';
 import { MessageBubble } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { PulsingDots } from './PulsingDots';
@@ -27,10 +28,15 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   const insets = useSafeAreaInsets();
   const [inputFocused, setInputFocused] = useState(false);
   
-  const sessionConfig = {
-    apiBaseUrl: 'http://192.168.178.147:3001',
-    platform: 'mobile' as const,
-  };
+  // Auto-detect server IP: Development builds or Expo Go
+  const debuggerHost = Constants.debuggerHost?.split(':')[0] 
+    || Constants.experienceUrl?.match(/exp:\/\/([^:]+)/)?.[1];
+    
+  const apiBaseUrl = `http://${debuggerHost}:3001`;
+  
+  if (!debuggerHost) {
+    console.error('❌ No server IP detected - use development build or Expo Go');
+  }
   
   const currentSessionIdRef = useRef(sessionId);
   
@@ -42,7 +48,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   const chatHook = useChat({
     transport: new DefaultChatTransport({
       fetch: expoFetch as unknown as typeof globalThis.fetch,
-      api: 'http://192.168.178.147:3001/api/chat',
+      api: `${apiBaseUrl}/api/chat`,
     }),
     
     id: sessionId,
@@ -74,7 +80,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
           
           const fetchTitle = async () => {
             try {
-              const response = await fetch(`${sessionConfig.apiBaseUrl}/api/chats`);
+              const response = await fetch(`${apiBaseUrl}/api/chats`);
               const sessions = await response.json();
               const currentSession = sessions.find(s => s.id === sessionId);
               

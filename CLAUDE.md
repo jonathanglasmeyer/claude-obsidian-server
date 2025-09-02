@@ -181,13 +181,43 @@ curl -X POST http://localhost:3000/api/chats \
   -d '{"title":"Test Chat"}'
 ```
 
-### Mobile App Debugging
-```bash
-# Take screenshot from Android emulator for visual debugging
-adb exec-out screencap -p > /tmp/android_screenshot.png
+### Mobile App Development
 
-# Then read with Claude Code to see UI state
-# This is THE method to understand visual output on Android
+**Recommended Development Setup (Expo Go):**
+```bash
+# 1. Install Expo Go app from Play Store on your device
+
+# 2. Enable ADB over WiFi (optional, for debugging)
+adb tcpip 5555
+arp -a | grep -i "192.168.178"  # Find your device IP
+adb connect [DEVICE_IP]:5555    # Usually 192.168.178.162
+
+# 3. Start Expo development server
+cd ObsidianShare
+npx expo start
+
+# 4. In Expo Go app: "Enter URL manually" 
+# Enter: exp://192.168.178.147:8081
+# (Or scan QR code from terminal/browser at localhost:8081)
+```
+
+**Development Benefits:**
+- ✅ **No app installation needed** - runs directly in Expo Go
+- ✅ **Full Hot Reload** over WiFi
+- ✅ **Automatic IP detection** via `Constants.experienceUrl`
+- ✅ **Easy setup** - just install Expo Go from Play Store
+- ✅ **Native debugging**: `adb exec-out screencap -p > /tmp/screenshot.png`
+
+**IP Detection Logic:**
+- **Development builds**: Uses `Constants.debuggerHost`  
+- **Expo Go**: Extracts IP from `Constants.experienceUrl` (exp://IP:8081)
+- **No fallbacks**: Fails cleanly if no IP detected
+
+**Alternative: Development Builds** (more complex):
+```bash
+# Only if you need native modules or custom builds
+npx expo install expo-dev-client
+npx expo run:android --dev-client
 ```
 
 ## Common Issues & Solutions
