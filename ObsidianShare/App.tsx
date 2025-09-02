@@ -7,10 +7,12 @@ import { ErrorBoundary, ChatErrorFallback } from './ErrorBoundary';
 import { ChatHeader } from './components/ChatHeader';
 import { SideMenu } from './components/SideMenu';
 import { ChatComponent } from './components/ChatComponent';
+import { WelcomeScreen } from './components/WelcomeScreen';
 
 
 function AppContent() {
   const [sideMenuVisible, setSideMenuVisible] = useState(false);
+  const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   
   const sessionConfig = {
@@ -46,31 +48,17 @@ function AppContent() {
     );
   }
 
-  // Show session selector if no active session
+  // Show welcome screen if no active session
   if (!activeSessionId) {
+    const handleFirstMessage = async (message: string) => {
+      console.log('🚀 Creating new session with first message:', message);
+      setPendingFirstMessage(message);
+      const sessionId = await createSession('New Chat');
+      console.log('✅ Created new session:', sessionId);
+    };
+
     return (
-      <View style={{ 
-        flex: 1, 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        paddingTop: insets.top 
-      }}>
-        <Text style={{ color: '#666', marginBottom: 16 }}>No active session</Text>
-        <TouchableOpacity 
-          onPress={async () => {
-            const sessionId = await createSession('New Chat');
-            console.log('✅ Created new session:', sessionId);
-          }}
-          style={{ 
-            backgroundColor: '#10a37f', 
-            paddingHorizontal: 20, 
-            paddingVertical: 12, 
-            borderRadius: 8 
-          }}
-        >
-          <Text style={{ color: 'white', fontWeight: '600' }}>Create New Chat</Text>
-        </TouchableOpacity>
-      </View>
+      <WelcomeScreen onFirstMessage={handleFirstMessage} />
     );
   }
 
@@ -90,6 +78,8 @@ function AppContent() {
           sessionId={activeSessionId}
           activeSession={activeSession}
           loadSessionMessages={loadSessionMessages}
+          pendingFirstMessage={pendingFirstMessage}
+          onFirstMessageSent={() => setPendingFirstMessage(null)}
         />
       </ErrorBoundary>
 

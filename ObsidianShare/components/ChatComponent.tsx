@@ -12,9 +12,11 @@ interface ChatComponentProps {
   sessionId: string;
   activeSession: any;
   loadSessionMessages: (sessionId: string) => Promise<any[]>;
+  pendingFirstMessage?: string | null;
+  onFirstMessageSent?: () => void;
 }
 
-export function ChatComponent({ sessionId, activeSession, loadSessionMessages }: ChatComponentProps) {
+export function ChatComponent({ sessionId, activeSession, loadSessionMessages, pendingFirstMessage, onFirstMessageSent }: ChatComponentProps) {
   console.log('💬 ChatComponent render - sessionId:', sessionId, 'loadSessionMessages:', typeof loadSessionMessages);
   
   const [chatError, setChatError] = useState(null);
@@ -50,6 +52,12 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages }:
     onFinish: (message) => {
       console.log('🎯 onFinish called for sessionId:', sessionId, message);
       setChatError(null);
+      
+      // Clear pending first message after successful completion
+      if (pendingFirstMessage) {
+        console.log('✅ Clearing pendingFirstMessage after successful completion');
+        onFirstMessageSent?.();
+      }
     }
   });
   
@@ -100,6 +108,12 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages }:
   }, [messages.length, status]);
 
   useEffect(() => {
+    // Skip loading messages if we have a pending first message (new chat)
+    if (pendingFirstMessage) {
+      console.log('🚫 Skipping message loading - have pendingFirstMessage');
+      return;
+    }
+
     const controller = new AbortController();
     
     const loadMessages = async () => {
@@ -133,7 +147,16 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages }:
     return () => {
       controller.abort();
     };
-  }, []);
+  }, [pendingFirstMessage]);
+
+  // Auto-send pending first message immediately when sendMessage becomes available
+  useEffect(() => {
+    if (pendingFirstMessage && sendMessage && status === 'ready') {
+      console.log('🚀 Auto-sending pending first message:', pendingFirstMessage);
+      sendMessage({ text: pendingFirstMessage }); // useChat handles optimistic display
+      // Note: Don't call onFirstMessageSent() immediately - wait for completion
+    }
+  }, [pendingFirstMessage, sendMessage, status]);
 
   const handleSendMessage = async (messageText: string) => {
     if (status === 'streaming' || status === 'submitted') return;

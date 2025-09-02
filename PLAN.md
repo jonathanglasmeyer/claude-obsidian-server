@@ -34,9 +34,10 @@ Official AI SDK v5 with DefaultChatTransport, proper polyfills, session persiste
 ✅ **M3-compliant sidebar with balanced spacing and world-class typography**
 ✅ **Markdown rendering fully implemented** - MarkdownMessage component with comprehensive styling
 
-- remove back button; one color drawer; more subtle new with proper icon
-
 - Beim Start der App sollte nicht immer neuer Chat erstellt werden, sondern wir sollten so wie ChatGPT eine Art Input-Screen machen.welcomeScreen mit input. Wenn ich das ausfülle, dann kriege ich erst nach einer regulären Chat.
+
+- context menu in drawer to rename & delete chats
+- sensible chat names
 ### 🚫 DEFERRED STEPS
 
 #### Step 4.2: Share Intent Configuration (DEFERRED)

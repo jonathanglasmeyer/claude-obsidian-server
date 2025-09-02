@@ -55,11 +55,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
         
         setSessions(convertedSessions);
         
-        // Set the most recent session as active if none is set
-        if (convertedSessions.length > 0) {
-          console.log('🎯 Setting first session as active:', convertedSessions[0].id);
-          setActiveSessionId(convertedSessions[0].id);
-        }
+        // Note: Not auto-selecting any session to always start with welcome screen
         
       } catch (error) {
         console.error('❌ Failed to load sessions from backend:', error);
