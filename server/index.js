@@ -65,25 +65,10 @@ app.post('/api/chat', async (req, res) => {
 
     console.log('💬 AI chat request - chatId:', chatId, 'messages:', messages.length);
     
-    // If chatId is provided, load existing messages and append new ones
+    // The AI SDK useChat hook already sends the complete conversation
+    // No need to load and append existing messages - that causes duplication!
     let allMessages = messages;
-    if (chatId) {
-      try {
-        console.log('📥 Loading existing messages for session:', chatId);
-        const existingMessages = await sessionStore.getChatMessages(chatId);
-        if (existingMessages && existingMessages.length > 0) {
-          console.log('📚 Found', existingMessages.length, 'existing messages');
-          // Append new messages to existing ones
-          allMessages = [...existingMessages, ...messages];
-          console.log('💬 Total conversation now has', allMessages.length, 'messages');
-        } else {
-          console.log('📝 No existing messages found, starting new conversation');
-        }
-      } catch (error) {
-        console.error('❌ Failed to load existing messages:', error);
-        console.log('🔄 Continuing with new messages only');
-      }
-    }
+    console.log('💬 Processing', allMessages.length, 'messages from AI SDK useChat');
     
     // Create Claude provider
     const claudeProvider = createClaudeProvider();

@@ -245,59 +245,64 @@ function ChatComponent({ sessionId, activeSession, loadSessionMessages }) {
         showsVerticalScrollIndicator={false}
       >
         <Text style={{ color: '#999', padding: 16 }}>Messages count: {messages.length}</Text>
-        {messages.map((message, index) => (
-          <MessageBubble key={message.id || index} role={message.role}>
-            {message.parts?.map((part, i) => {
-              const partKey = `${message.id || index}-${i}`;
-              
-              switch (part.type) {
-                case 'text':
-                  return <Text key={partKey}>{part.text}</Text>;
+        {messages.map((message, index) => {
+          // Create unique key by combining message ID/index with message content hash
+          const messageKey = `msg-${index}-${message.id || 'no-id'}`;
+          
+          return (
+            <MessageBubble key={messageKey} role={message.role}>
+              {message.parts?.map((part, i) => {
+                const partKey = `${messageKey}-part-${i}`;
                 
-                // Step metadata - don't render (like web prototype)
-                case 'step-start':
-                case 'step-finish':
-                  return null;
-                
-                // Tool visualizations (future: replace with proper components)
-                case 'tool-Read':
-                case 'tool-Write':
-                case 'tool-Edit':
-                case 'tool-Bash':
-                case 'tool-Grep':
-                case 'tool-Glob':
-                  return (
-                    <View key={partKey} style={{ 
-                      backgroundColor: '#f0f8ff', 
-                      padding: 8, 
-                      marginVertical: 4, 
-                      borderRadius: 6,
-                      borderLeftWidth: 3,
-                      borderLeftColor: '#007AFF'
-                    }}>
-                      <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#007AFF', marginBottom: 4 }}>
-                        🛠️ {part.type.replace('tool-', '')}
+                switch (part.type) {
+                  case 'text':
+                    return <Text key={partKey}>{part.text}</Text>;
+                  
+                  // Step metadata - don't render (like web prototype)
+                  case 'step-start':
+                  case 'step-finish':
+                    return null;
+                  
+                  // Tool visualizations (future: replace with proper components)
+                  case 'tool-Read':
+                  case 'tool-Write':
+                  case 'tool-Edit':
+                  case 'tool-Bash':
+                  case 'tool-Grep':
+                  case 'tool-Glob':
+                    return (
+                      <View key={partKey} style={{ 
+                        backgroundColor: '#f0f8ff', 
+                        padding: 8, 
+                        marginVertical: 4, 
+                        borderRadius: 6,
+                        borderLeftWidth: 3,
+                        borderLeftColor: '#007AFF'
+                      }}>
+                        <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#007AFF', marginBottom: 4 }}>
+                          🛠️ {part.type.replace('tool-', '')}
+                        </Text>
+                        <Text style={{ fontSize: 10, fontFamily: 'monospace', color: '#666' }}>
+                          {JSON.stringify(part, null, 2)}
+                        </Text>
+                      </View>
+                    );
+                  
+                  default:
+                    // Fallback for any unknown part types
+                    if (typeof part === 'string') {
+                      return <Text key={partKey}>{part}</Text>;
+                    }
+                    return (
+                      <Text key={partKey} style={{ fontStyle: 'italic', color: '#999' }}>
+                        [Unknown part type: {part.type || typeof part}]
                       </Text>
-                      <Text style={{ fontSize: 10, fontFamily: 'monospace', color: '#666' }}>
-                        {JSON.stringify(part, null, 2)}
-                      </Text>
-                    </View>
-                  );
-                
-                default:
-                  // Fallback for any unknown part types
-                  if (typeof part === 'string') {
-                    return <Text key={partKey}>{part}</Text>;
-                  }
-                  return (
-                    <Text key={partKey} style={{ fontStyle: 'italic', color: '#999' }}>
-                      [Unknown part type: {part.type || typeof part}]
-                    </Text>
-                  );
-              }
-            }) || <Text>[No content]</Text>}
-          </MessageBubble>
-        ))}
+                    );
+                }
+              }) || <Text>[No content]</Text>}
+            </MessageBubble>
+          );
+        })}
         
         {/* Loading indicator - ChatGPT style pulsing dots */}
         {status === 'submitted' && (
