@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { BorderlessButton } from 'react-native-gesture-handler';
+import { MenuIcon } from './MenuIcon';
 
 interface ChatHeaderProps {
   title: string;
@@ -13,46 +14,6 @@ interface ChatHeaderProps {
 export function ChatHeader({ title, onMenuPress, onMorePress }: ChatHeaderProps) {
   const insets = useSafeAreaInsets();
 
-  // Create proper Gesture.Tap for menu button - FORCE JS THREAD EXECUTION
-  const menuTapGesture = Gesture.Tap()
-    .maxDuration(250) // Quick tap only
-    .maxDistance(10) // Allow small movement
-    .runOnJS(true) // CRITICAL: Force callback to run on JS thread where React Context works
-    .onStart(() => {
-      console.log('👇 Menu Gesture.Tap onStart - running on JS thread');
-    })
-    .onEnd((event, success) => {
-      if (success) {
-        console.log('🍔 Menu button tapped via Gesture.Tap - executing on JS thread!');
-        try {
-          console.log('🔍 About to call onMenuPress directly (JS thread)...');
-          onMenuPress(); // Can now safely call React Context function
-          console.log('✅ Menu tap completed successfully');
-        } catch (error) {
-          console.error('❌ Menu tap failed:', error);
-          console.error('❌ Error details:', error.message, error.stack);
-        }
-      }
-    })
-    .onFinalize((event, success) => {
-      console.log('👆 Menu Gesture.Tap onFinalize -', success ? 'SUCCESS' : 'FAILED');
-    });
-
-  const moreTapGesture = Gesture.Tap()
-    .maxDuration(250)
-    .maxDistance(10)
-    .runOnJS(true) // CRITICAL: Force callback to run on JS thread where React Context works
-    .onEnd((event, success) => {
-      if (success && onMorePress) {
-        console.log('⋮ More button tapped via Gesture.Tap - executing on JS thread!');
-        try {
-          onMorePress(); // Can now safely call React Context function
-          console.log('✅ More tap completed successfully');
-        } catch (error) {
-          console.error('❌ More tap failed:', error);
-        }
-      }
-    });
 
   return (
     <View style={{ 
@@ -62,26 +23,38 @@ export function ChatHeader({ title, onMenuPress, onMorePress }: ChatHeaderProps)
       justifyContent: 'flex-end',
       paddingBottom: 8,
       backgroundColor: '#ffffff',
-      borderBottomWidth: 1,
-      borderBottomColor: '#e5e5e5',
     }}>
       <View style={{ 
         flexDirection: 'row', 
         alignItems: 'center',
         height: 48,
       }}>
-        {/* Navigation Icon - Gesture.Tap */}
-        <GestureDetector gesture={menuTapGesture}>
-          <View style={{ 
+        {/* Navigation Icon - BorderlessButton with Native Ripple */}
+        <BorderlessButton
+          onPress={() => {
+            console.log('🍔 Menu button pressed - BorderlessButton with native ripple!');
+            try {
+              onMenuPress();
+              console.log('✅ Menu action executed');
+            } catch (error) {
+              console.error('❌ Menu action failed:', error);
+            }
+          }}
+          style={{ 
             width: 48,
             height: 48,
             alignItems: 'center',
             justifyContent: 'center',
-            marginLeft: 4,
-          }}>
-            <MaterialIcons name="menu" size={24} color="#1d1b20" />
-          </View>
-        </GestureDetector>
+            marginLeft: -4,
+            marginRight: 8, // Add spacing between menu and title
+            borderRadius: 24,
+          }}
+          rippleColor="rgba(29, 27, 32, 0.15)" // Native Android ripple
+          borderless={false} // Contain ripple within button bounds
+          activeOpacity={0.7} // iOS fallback
+        >
+          <MenuIcon size={24} color="#1d1b20" />
+        </BorderlessButton>
         
         {/* Title */}
         <View style={{ flex: 1, justifyContent: 'center' }}>
@@ -97,18 +70,34 @@ export function ChatHeader({ title, onMenuPress, onMorePress }: ChatHeaderProps)
           </Text>
         </View>
         
-        {/* Action Icon - Gesture.Tap */}
-        <GestureDetector gesture={moreTapGesture}>
-          <View style={{ 
+        {/* Action Icon - BorderlessButton with Native Ripple */}
+        <BorderlessButton
+          onPress={() => {
+            if (onMorePress) {
+              console.log('⋮ More button pressed - BorderlessButton with native ripple!');
+              try {
+                onMorePress();
+                console.log('✅ More action executed');
+              } catch (error) {
+                console.error('❌ More action failed:', error);
+              }
+            }
+          }}
+          style={{ 
             width: 48,
             height: 48,
             alignItems: 'center',
             justifyContent: 'center',
             marginRight: 4,
-          }}>
-            <MaterialIcons name="more-vert" size={24} color="#49454f" />
-          </View>
-        </GestureDetector>
+            marginLeft: 8, // Add spacing between title and more button
+            borderRadius: 24,
+          }}
+          rippleColor="rgba(73, 69, 79, 0.15)" // Native Android ripple
+          borderless={false} // Contain ripple within button bounds
+          activeOpacity={0.7} // iOS fallback
+        >
+          <MaterialIcons name="more-vert" size={24} color="#49454f" />
+        </BorderlessButton>
       </View>
     </View>
   );

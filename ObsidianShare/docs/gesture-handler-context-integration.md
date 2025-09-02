@@ -205,9 +205,81 @@ If you're still experiencing crashes:
 - [ ] Wrapped app with `GestureHandlerRootView`?
 - [ ] No setTimeout/setInterval inside worklets?
 
+## SOLUTION 4: BorderlessButton - Best of Both Worlds (Recommended for Gesture Coexistence)
+
+When you need tap gestures that coexist with other gesture handlers (like drawer pan gestures) AND want native visual feedback, use React Native Gesture Handler's built-in button components:
+
+```jsx
+import { BorderlessButton } from 'react-native-gesture-handler';
+import { useDrawerContext } from './DrawerContext';
+
+function HeaderComponent() {
+  const { toggleDrawer } = useDrawerContext();
+
+  return (
+    <BorderlessButton
+      onPress={() => {
+        console.log('🍔 Menu button pressed - BorderlessButton!');
+        try {
+          toggleDrawer(); // Direct React Context call - no thread issues
+        } catch (error) {
+          console.error('❌ Menu action failed:', error);
+        }
+      }}
+      style={{ 
+        width: 48,
+        height: 48,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 24,
+      }}
+      rippleColor="rgba(29, 27, 32, 0.15)" // Native Android ripple
+      borderless={false} // Contain ripple within button bounds
+      activeOpacity={0.7} // iOS fallback feedback
+    >
+      <MaterialIcons name="menu" size={24} color="#1d1b20" />
+    </BorderlessButton>
+  );
+}
+```
+
+### Why BorderlessButton is Superior for Gesture Coexistence
+
+1. **Native Gesture Integration**: Built into React Native Gesture Handler, designed to work alongside other gestures
+2. **No Thread Safety Issues**: Uses standard React callback pattern, not worklet threads
+3. **Native Visual Feedback**: Real Android ripple effects + iOS opacity feedback
+4. **Instant Response**: No gesture detection delays like manual tap gestures
+5. **Higher Gesture Priority**: Won't be blocked by surrounding pan gestures
+
+### BorderlessButton vs RectButton
+
+```jsx
+// For simple icon buttons (recommended)
+import { BorderlessButton } from 'react-native-gesture-handler';
+
+<BorderlessButton
+  rippleColor="rgba(0, 0, 0, 0.15)"
+  borderless={false} // Contains ripple within bounds
+  activeOpacity={0.7}
+>
+  <Icon />
+</BorderlessButton>
+
+// For larger button areas with background
+import { RectButton } from 'react-native-gesture-handler';
+
+<RectButton
+  rippleColor="rgba(0, 0, 0, 0.1)"
+  underlayColor="#f5f5f5" // Background color when pressed
+  activeOpacity={0.8}
+>
+  <Text>Full Button</Text>
+</RectButton>
+```
+
 ## Alternative: Avoid Gesture Handler for Simple Taps
 
-If you only need basic tap handling, consider using React Native's built-in `Pressable`:
+If you don't need gesture coexistence, consider using React Native's built-in `Pressable`:
 
 ```jsx
 import { Pressable } from 'react-native';
@@ -226,15 +298,20 @@ function HeaderComponent() {
 }
 ```
 
-**Use Gesture Handler when you need:**
-- Complex gestures (pan, pinch, rotation)
-- Multiple simultaneous gestures
-- High-performance animations
-- Custom gesture recognition
+**Use BorderlessButton/RectButton when you need:**
+- Tap gestures that coexist with other gesture handlers (pan, scroll, etc.)
+- Native visual feedback (ripples, press states)
+- High gesture recognition priority
+- Professional Material Design compliance
+
+**Use Manual Gesture.Tap when you need:**
+- Complex gesture logic (duration, distance, multi-tap)
+- Custom animation integration
+- Gesture composition (simultaneous, exclusive, etc.)
 
 **Use Pressable when you need:**
-- Simple tap handling
-- Direct React Context access
+- Simple tap handling in isolation
+- No gesture handler conflicts
 - Simpler architecture
 
 ## Real-World Case Study: Menu Button Crash Investigation
@@ -263,10 +340,11 @@ function HeaderComponent() {
 - React Context functions (useDrawerContext) run on JS thread
 - Thread boundary violation → immediate crash
 
-### The Working Solution
+### The Working Solutions
 
+**Solution 1: Manual Gesture with Thread Safety**
 ```jsx
-// ✅ WORKING: ChatHeader.tsx
+// ✅ WORKING: Manual Gesture.Tap with .runOnJS(true)
 const menuTapGesture = Gesture.Tap()
   .maxDuration(250)
   .maxDistance(10)
@@ -278,11 +356,30 @@ const menuTapGesture = Gesture.Tap()
   });
 ```
 
-**Why this specific approach worked**:
-- `.runOnJS(true)` forces ALL callbacks to JS thread
-- Direct access to React Context without bridging
-- Simple, clean architecture
-- Compatible with gesture priority systems
+**Solution 2: BorderlessButton (Final Recommended Approach)**
+```jsx
+// ✅ OPTIMAL: BorderlessButton with native ripple
+import { BorderlessButton } from 'react-native-gesture-handler';
+
+<BorderlessButton
+  onPress={() => {
+    onMenuPress(); // Direct call - no thread issues
+  }}
+  rippleColor="rgba(29, 27, 32, 0.15)" // Native Android ripple
+  borderless={false} // Contain ripple within bounds
+  activeOpacity={0.7} // iOS fallback
+  style={buttonStyles}
+>
+  <MaterialIcons name="menu" size={24} color="#1d1b20" />
+</BorderlessButton>
+```
+
+**Why BorderlessButton became the final solution**:
+- **No thread safety concerns**: Uses standard React callbacks, not worklet threads
+- **Native gesture integration**: Designed to coexist with other gesture handlers
+- **Native visual feedback**: Real Android ripples + iOS press states
+- **Instant response**: No gesture detection delays
+- **Cleaner code**: No manual gesture configuration needed
 
 ### Debugging Journey Lessons
 

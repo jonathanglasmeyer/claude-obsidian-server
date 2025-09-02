@@ -135,11 +135,11 @@ export function SideMenu({
             {/* M3 Typography - Heavier for Action */}
             <Text style={{ 
               fontSize: 14,                    // M3 Label Large
-              fontWeight: '600',               // Heavier for Action Button
+              fontWeight: '600',               // Semi-bold weight
               lineHeight: 20,                  // M3 spec
               letterSpacing: 0.1,              // M3 Letter spacing
               color: '#1D1B20',                // M3 On-Surface
-              fontFamily: Platform.OS === 'android' ? 'Roboto-SemiBold' : 'SF Pro Display',
+              fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'SF Pro Display Medium',
               flex: 1,
             }}>
               New chat
@@ -156,7 +156,7 @@ export function SideMenu({
           <View style={{ paddingHorizontal: 20, marginBottom: 8 }}>
             <Text style={{
               fontSize: 12,                    // M3 Label Small
-              fontWeight: '500',               // Medium weight for headers
+              fontWeight: '600',               // Semi-bold weight for headers
               color: '#49454F',                // M3 On-Surface-Variant
               lineHeight: 16,
               letterSpacing: 0.5,              // More spacing for small text
@@ -222,11 +222,11 @@ export function SideMenu({
                 <View style={{ flex: 1, justifyContent: 'center', paddingVertical: 2 }}>
                   <Text style={{
                     fontSize: 14,
-                    fontWeight: '400',               // Lighter for content items
+                    fontWeight: '600',               // Semi-bold weight
                     color: session.id === activeSessionId ? 'rgb(124, 58, 237)' : '#1D1B20',
                     lineHeight: 20,
                     letterSpacing: 0.1,
-                    fontFamily: Platform.OS === 'android' ? 'Roboto-Regular' : 'SF Pro Display',
+                    fontFamily: Platform.OS === 'android' ? 'Roboto-Medium' : 'SF Pro Display Medium',
                   }}>
                     {generateConversationTitle(session)}
                   </Text>
