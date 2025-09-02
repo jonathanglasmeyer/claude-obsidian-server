@@ -28,6 +28,8 @@ export function ProgressiveDrawer({
   isOpen = false, 
   onOpenChange 
 }: ProgressiveDrawerProps) {
+  console.log('🎭 ProgressiveDrawer render - isOpen:', isOpen);
+  
   const drawerProgress = useSharedValue(isOpen ? 1 : 0);
   const isDrawerOpen = useSharedValue(isOpen);
 
@@ -46,21 +48,45 @@ export function ProgressiveDrawer({
 
   // Pan gesture for progressive reveal
   const panGesture = Gesture.Pan()
-    .minDistance(8) // Higher to avoid conflicts with buttons
-    .activeOffsetX([-15, 15]) // Balanced threshold for both directions
-    .failOffsetY([-30, 30]) // Allow some vertical movement
+    .minDistance(2) // Very low for immediate response
+    .activeOffsetX([-5, 5]) // Very sensitive to both directions
+    .failOffsetY([-40, 40]) // Allow more vertical movement
     .maxPointers(1) // Only single finger
     .shouldCancelWhenOutside(false)
     .minPointers(1)
+    .enableTrackpadTwoFingerGesture(false) // Prevent trackpad interference
+    .onBegin(() => {
+      console.log('🟡 Pan gesture BEGIN (touch detected)');
+    })
     .onStart((event) => {
-      // Cancel any ongoing animations when user starts dragging
-      console.log('🤏 Pan gesture started, current drawer open:', isDrawerOpen.value);
+      console.log('🤏 Pan gesture STARTED:', {
+        drawerOpen: isDrawerOpen.value,
+        startX: event.x.toFixed(1),
+        startY: event.y.toFixed(1),
+        translationX: event.translationX.toFixed(1),
+        translationY: event.translationY.toFixed(1)
+      });
+    })
+    .onTouchesDown((event) => {
+      console.log('👇 Pan gesture TOUCHES DOWN:', {
+        numberOfTouches: event.numberOfTouches,
+        allTouchesX: event.allTouches.map(t => t.x.toFixed(1)),
+        allTouchesY: event.allTouches.map(t => t.y.toFixed(1))
+      });
     })
     .onUpdate((event) => {
       // Calculate progress based on current drawer state
       const currentOffset = isDrawerOpen.value ? DRAWER_WIDTH : 0;
       const newPosition = currentOffset + event.translationX;
       const progress = Math.max(0, Math.min(1, newPosition / DRAWER_WIDTH));
+      
+      console.log('👆 Gesture update:', {
+        translationX: event.translationX.toFixed(1),
+        currentOffset,
+        newPosition: newPosition.toFixed(1),
+        progress: progress.toFixed(2),
+        drawerOpen: isDrawerOpen.value
+      });
       
       drawerProgress.value = progress;
     })
@@ -100,6 +126,18 @@ export function ProgressiveDrawer({
           console.log('✅ Animation finished, drawer is now:', shouldOpen ? 'open' : 'closed');
         }
       });
+    })
+    .onFinalize((event) => {
+      console.log('🏁 Pan gesture FINALIZE:', {
+        state: event.state,
+        translationX: event.translationX?.toFixed(1) || 'N/A',
+        velocityX: event.velocityX?.toFixed(1) || 'N/A'
+      });
+    })
+    .onTouchesUp((event) => {
+      console.log('👆 Pan gesture TOUCHES UP:', {
+        numberOfTouches: event.numberOfTouches
+      });
     });
 
   // Animated style for the drawer
@@ -135,10 +173,12 @@ export function ProgressiveDrawer({
     };
   });
 
-  // Tap gesture for overlay to close drawer
+  // Tap gesture for overlay to close drawer - allow pan gestures to pass through
   const overlayTapGesture = Gesture.Tap()
+    .simultaneousWithExternalGesture(panGesture)
     .onEnd(() => {
       if (drawerProgress.value > 0) {
+        console.log('📱 Overlay tapped, closing drawer');
         drawerProgress.value = withTiming(0, { 
           duration: 200,
           easing: Easing.out(Easing.cubic)
@@ -161,20 +201,22 @@ export function ProgressiveDrawer({
       </GestureDetector>
       
       {/* Overlay for dimming effect with tap-to-close */}
-      <GestureDetector gesture={overlayTapGesture}>
+      <GestureDetector gesture={Gesture.Simultaneous(overlayTapGesture, panGesture)}>
         <Animated.View 
           style={[styles.overlay, overlayAnimatedStyle]}
-          pointerEvents={drawerProgress.value > 0.1 ? 'auto' : 'none'}
+          pointerEvents="auto"
         />
       </GestureDetector>
       
-      {/* Progressive drawer - NO gesture detection here */}
-      <Animated.View 
-        style={[styles.drawer, drawerAnimatedStyle]}
-        pointerEvents="auto" // Ensure drawer content can receive touches
-      >
-        {drawerContent}
-      </Animated.View>
+      {/* Progressive drawer - ADD pan gesture detection here */}
+      <GestureDetector gesture={panGesture}>
+        <Animated.View 
+          style={[styles.drawer, drawerAnimatedStyle]}
+          pointerEvents="auto" // Ensure drawer content can receive touches
+        >
+          {drawerContent}
+        </Animated.View>
+      </GestureDetector>
     </View>
   );
 }
