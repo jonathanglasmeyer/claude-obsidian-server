@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChatInput } from './ChatInput';
 
 interface WelcomeScreenProps {
@@ -8,13 +7,10 @@ interface WelcomeScreenProps {
 }
 
 export function WelcomeScreen({ onFirstMessage }: WelcomeScreenProps) {
-  const insets = useSafeAreaInsets();
-
   return (
     <View style={{ 
       flex: 1, 
-      backgroundColor: '#fff',
-      paddingTop: insets.top 
+      backgroundColor: '#fff'
     }}>
       {/* Main content centered */}
       <View style={{

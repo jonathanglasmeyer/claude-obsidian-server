@@ -14,9 +14,10 @@ interface ChatComponentProps {
   loadSessionMessages: (sessionId: string) => Promise<any[]>;
   pendingFirstMessage?: string | null;
   onFirstMessageSent?: () => void;
+  onUpdateChatTitle?: (sessionId: string, title: string) => void;
 }
 
-export function ChatComponent({ sessionId, activeSession, loadSessionMessages, pendingFirstMessage, onFirstMessageSent }: ChatComponentProps) {
+export function ChatComponent({ sessionId, activeSession, loadSessionMessages, pendingFirstMessage, onFirstMessageSent, onUpdateChatTitle }: ChatComponentProps) {
   console.log('💬 ChatComponent render - sessionId:', sessionId, 'loadSessionMessages:', typeof loadSessionMessages);
   
   const [chatError, setChatError] = useState(null);
@@ -56,6 +57,19 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, p
       // Clear pending first message after successful completion
       if (pendingFirstMessage) {
         console.log('✅ Clearing pendingFirstMessage after successful completion');
+        
+        // Generate chat title from first message (max 30 chars, clean up)
+        const newTitle = pendingFirstMessage
+          .trim()
+          .slice(0, 30)
+          .replace(/\s+/g, ' ') // normalize whitespace
+          .trim();
+        
+        if (newTitle && onUpdateChatTitle) {
+          console.log('🏷️ Auto-generating chat title:', newTitle);
+          onUpdateChatTitle(sessionId, newTitle);
+        }
+        
         onFirstMessageSent?.();
       }
     }

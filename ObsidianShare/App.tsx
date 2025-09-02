@@ -28,6 +28,7 @@ function AppContent() {
     createSession,
     deleteSession,
     loadSessionMessages,
+    renameSession,
     isInitialized,
     isLoading,
   } = useSessions(sessionConfig);
@@ -48,19 +49,12 @@ function AppContent() {
     );
   }
 
-  // Show welcome screen if no active session
-  if (!activeSessionId) {
-    const handleFirstMessage = async (message: string) => {
-      console.log('🚀 Creating new session with first message:', message);
-      setPendingFirstMessage(message);
-      const sessionId = await createSession('New Chat');
-      console.log('✅ Created new session:', sessionId);
-    };
-
-    return (
-      <WelcomeScreen onFirstMessage={handleFirstMessage} />
-    );
-  }
+  const handleFirstMessage = async (message: string) => {
+    console.log('🚀 Creating new session with first message:', message);
+    setPendingFirstMessage(message);
+    const sessionId = await createSession('New Chat');
+    console.log('✅ Created new session:', sessionId);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -72,16 +66,24 @@ function AppContent() {
         onMorePress={() => {}}
       />
 
-      <ErrorBoundary fallback={ChatErrorFallback}>
-        <ChatComponent 
-          key={activeSessionId}
-          sessionId={activeSessionId}
-          activeSession={activeSession}
-          loadSessionMessages={loadSessionMessages}
-          pendingFirstMessage={pendingFirstMessage}
-          onFirstMessageSent={() => setPendingFirstMessage(null)}
-        />
-      </ErrorBoundary>
+      {!activeSessionId ? (
+        <WelcomeScreen onFirstMessage={handleFirstMessage} />
+      ) : (
+        <ErrorBoundary fallback={ChatErrorFallback}>
+          <ChatComponent 
+            key={activeSessionId}
+            sessionId={activeSessionId}
+            activeSession={activeSession}
+            loadSessionMessages={loadSessionMessages}
+            pendingFirstMessage={pendingFirstMessage}
+            onFirstMessageSent={() => setPendingFirstMessage(null)}
+            onUpdateChatTitle={(sessionId, title) => {
+              console.log('🏷️ Updating chat title for session:', sessionId, 'to:', title);
+              renameSession(sessionId, title);
+            }}
+          />
+        </ErrorBoundary>
+      )}
 
       <SideMenu
         visible={sideMenuVisible}
