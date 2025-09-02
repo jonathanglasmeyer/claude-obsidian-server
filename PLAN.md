@@ -34,9 +34,7 @@ Official AI SDK v5 with DefaultChatTransport, proper polyfills, session persiste
 ✅ **M3-compliant sidebar with balanced spacing and world-class typography**
 ✅ **Markdown rendering fully implemented** - MarkdownMessage component with comprehensive styling
 
-
-#### Step 4.8: Component Architecture Optimization ⭐ CURRENT PHASE
-⏳ **TODO**: Component extraction (MessageBubble, ChatInput) to separate files
+- remove back button; one color drawer; more subtle new with proper icon
 
 - Beim Start der App sollte nicht immer neuer Chat erstellt werden, sondern wir sollten so wie ChatGPT eine Art Input-Screen machen.welcomeScreen mit input. Wenn ich das ausfülle, dann kriege ich erst nach einer regulären Chat.
 ### 🚫 DEFERRED STEPS
