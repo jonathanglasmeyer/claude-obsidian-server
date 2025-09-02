@@ -234,7 +234,7 @@ export function SideMenu({
                     <Text style={{
                       fontSize: 14,
                       fontWeight: '400',
-                      color: '#49454F',
+                      color: '#79747E',
                       lineHeight: 20,
                       letterSpacing: 0.25,
                       marginTop: 2,
