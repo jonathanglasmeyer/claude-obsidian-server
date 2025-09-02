@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, TextInput, Text } from 'react-native';
 import { BorderlessButton, GestureDetector, Gesture } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
 interface ChatInputProps {
@@ -16,6 +17,8 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
   console.log('💬 ChatInput component LOADED');
   const [inputText, setInputText] = useState('');
   const [localInputFocused, setLocalInputFocused] = useState(false);
+  const textInputRef = useRef(null);
+  const touchStartPos = useRef(null);
   
   // Use controlled prop if provided, otherwise local state
   const inputFocused = controlledInputFocused !== undefined ? controlledInputFocused : localInputFocused;
@@ -37,12 +40,51 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
 
   console.log('🎨 ChatInput render - inputFocused:', inputFocused, 'paddingBottom:', inputFocused ? 8 : 24);
 
-  // Create priority gesture for TextInput to override parent pan gesture
-  const textInputPriorityGesture = Gesture.Tap()
-    .shouldCancelWhenOutside(false)
-    .blocksExternalGesture(true)  // Block parent pan gesture
-    .onStart(() => {
-      console.log('⭐ TextInput priority gesture activated - blocking parent gestures');
+  // Define focus function in JS thread scope for runOnJS
+  const focusTextInput = () => {
+    if (textInputRef.current) {
+      console.log('📱 Programmatically focusing TextInput');
+      textInputRef.current.focus();
+    }
+  };
+
+  // Create manual gesture to handle TextInput focus and parent gesture coordination  
+  const textInputManualGesture = Gesture.Manual()
+    .onTouchesDown((event, manager) => {
+      'worklet';
+      const touch = event.changedTouches[0];
+      touchStartPos.current = { x: touch.x, y: touch.y };
+      
+      console.log('🔥 Manual gesture onTouchesDown - focusing TextInput');
+      
+      // Always focus TextInput on touch down
+      runOnJS(focusTextInput)();
+    })
+    .onTouchesMove((event, manager) => {
+      'worklet';
+      if (!touchStartPos.current) return;
+      
+      const touch = event.changedTouches[0];
+      const deltaX = Math.abs(touch.x - touchStartPos.current.x);
+      const deltaY = Math.abs(touch.y - touchStartPos.current.y);
+      
+      // Only activate parent gesture if significant movement (likely swipe)
+      if (deltaX > 10 || deltaY > 10) {
+        console.log('🏃 Significant movement detected - activating parent gesture');
+        manager.activate();
+      }
+    })
+    .onTouchesUp((event, manager) => {
+      'worklet';
+      touchStartPos.current = null;
+      
+      // For simple taps, let TextInput handle - fail the gesture
+      if (manager.state === 1) { // BEGAN state
+        console.log('👆 Simple tap - letting TextInput handle');
+        manager.fail();
+      } else {
+        manager.end();
+      }
     });
 
   return (
@@ -55,7 +97,7 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
       borderTopColor: '#e5e5e5',
       zIndex: 1
     }}>
-      <GestureDetector gesture={textInputPriorityGesture}>
+      <GestureDetector gesture={textInputManualGesture}>
           <View 
             style={{
               flexDirection: 'row',
@@ -68,6 +110,7 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
             }}
           >
         <TextInput
+          ref={textInputRef}
           style={{
             flex: 1,
             fontSize: 16,
@@ -82,6 +125,7 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
           multiline
           blurOnSubmit={false}
           onSubmitEditing={handleSend}
+          rejectResponderTermination={false}  // Allow parent responder to terminate (iOS)
           onPressIn={() => console.log('📱 TextInput onPressIn')}
           onPressOut={() => console.log('📱 TextInput onPressOut')}
           onFocus={() => {
