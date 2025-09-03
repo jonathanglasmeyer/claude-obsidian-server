@@ -6,8 +6,8 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-na
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { fetch as expoFetch } from 'expo/fetch';
-import Constants from 'expo-constants';
 import { MessageBubble } from './MessageBubble';
+import { getServerConfig } from '../config';
 import { ChatInput } from './ChatInput';
 import { PulsingDots } from './PulsingDots';
 import { MarkdownMessage } from './MarkdownMessage';
@@ -52,15 +52,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   const loadSessionMessagesRef = useRef(loadSessionMessages);
   loadSessionMessagesRef.current = loadSessionMessages;
   
-  // Auto-detect server IP: Development builds or Expo Go
-  const debuggerHost = Constants.debuggerHost?.split(':')[0] 
-    || Constants.experienceUrl?.match(/exp:\/\/([^:]+)/)?.[1];
-    
-  const apiBaseUrl = `http://${debuggerHost}:3001`;
-  
-  if (!debuggerHost) {
-    console.error('❌ No server IP detected - use development build or Expo Go');
-  }
+  const { apiBaseUrl } = getServerConfig();
   
   const currentSessionIdRef = useRef(sessionId);
   
