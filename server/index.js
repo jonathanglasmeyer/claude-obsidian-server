@@ -170,9 +170,27 @@ app.post('/api/chat', async (req, res) => {
     
   } catch (error) {
     console.error('❌ AI chat error:', error);
-    return res.status(500).json({ 
-      error: 'AI chat request failed',
-      details: error.message 
+    
+    // Provide specific error messages for common Claude issues
+    let errorMessage = 'AI chat request failed';
+    let statusCode = 500;
+    
+    if (error.message.includes('CLAUDE AUTHENTICATION')) {
+      errorMessage = 'Claude AI authentication error';
+      statusCode = 503; // Service Unavailable
+    } else if (error.message.includes('VAULT')) {
+      errorMessage = 'Vault access error';
+      statusCode = 503;
+    } else if (error.message.includes('Claude Code process exited with code 1')) {
+      errorMessage = 'Claude AI service error - likely authentication or configuration issue';
+      statusCode = 503;
+    }
+    
+    return res.status(statusCode).json({ 
+      error: errorMessage,
+      details: error.message,
+      timestamp: new Date().toISOString(),
+      suggestion: statusCode === 503 ? 'This appears to be a server configuration issue. Please contact support.' : null
     });
   }
 });

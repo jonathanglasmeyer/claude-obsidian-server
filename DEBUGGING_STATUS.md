@@ -3,7 +3,7 @@
 **Issue**: `ai-sdk-provider-claude-code` fails with "Claude Code process exited with code 1" in production server context.
 
 **Date**: 2025-09-03  
-**Status**: ❌ **UNSOLVED** - Mystery bug that only occurs in real server, not in isolated tests
+**Status**: ✅ **SOLVED** - Missing Claude OAuth token in Docker environment
 
 ---
 
@@ -192,3 +192,39 @@ The error occurs at `ai-sdk-provider-claude-code/dist/index.js:867:32` in the `O
 - ❌ **Both fail identically** in real server context
 
 **The bug is environment-specific but not platform-specific.**
+
+---
+
+## 🎯 SOLUTION FOUND
+
+### Root Cause
+**Missing `CLAUDE_CODE_OAUTH_TOKEN` environment variable in Docker production environment.**
+
+### Why This Was Confusing
+1. **Manual Claude CLI worked** in production container (used existing authentication)
+2. **All isolated tests worked** locally (had fallback vault paths)  
+3. **Production logs showed correct vault path** (vault path was actually correct)
+4. **Local server failed initially** due to different issue (incorrect vault path in `.env`)
+
+### The Real Issue
+- **Docker container**: No existing Claude authentication, needs OAuth token
+- **Local development**: `claude setup-token` provides authentication
+- **Production**: Must pass `CLAUDE_CODE_OAUTH_TOKEN` as environment variable
+
+### Final Fix Applied
+1. **Docker Compose**: Added `CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN}` 
+2. **Environment**: Host system's OAuth token passed into container
+3. **Result**: ✅ Production server fully operational
+
+### Key Learning
+The error "Claude Code process exited with code 1" can indicate **authentication failure**, not just path/configuration issues. Always verify Claude CLI authentication in containerized environments.
+
+### Verification
+```bash
+curl -X POST https://obsidian.quietloop.dev/api/chat \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: API_KEY" \
+  -d '{"messages":[{"role":"user","parts":[{"type":"text","text":"test"}]}]}'
+```
+
+**Status**: ✅ **WORKING** - Returns proper Claude AI responses with streaming
