@@ -22,7 +22,7 @@ interface ChatComponentProps {
 }
 
 export function ChatComponent({ sessionId, activeSession, loadSessionMessages, updateSessionMessages, renameSession, pendingFirstMessage, onFirstMessageSent }: ChatComponentProps) {
-  console.log('💬 ChatComponent render - sessionId:', sessionId, 'loadSessionMessages:', typeof loadSessionMessages);
+  // ChatComponent render
   
   const [chatError, setChatError] = useState(null);
   const scrollViewRef = useRef(null);
@@ -64,7 +64,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   
   useEffect(() => {
     currentSessionIdRef.current = sessionId;
-    console.log('🔄 Updated currentSessionIdRef to:', sessionId);
+    // Updated currentSessionIdRef
   }, [sessionId]);
 
   const chatHook = useChat({
@@ -83,22 +83,22 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
       setChatError(error);
     },
     onFinish: async (message) => {
-      console.log('🎯 onFinish called for sessionId:', sessionId, message);
+      // onFinish called for sessionId
       setChatError(null);
       
       // Update session messages count immediately after message completion
       if (message.messages && updateSessionMessages) {
-        console.log('📊 Updating session messages count to:', message.messages.length);
+        // Updating session messages count
         updateSessionMessages(sessionId, message.messages);
       }
       
       // Clear pending first message after successful completion
       if (pendingFirstMessage) {
-        console.log('✅ Clearing pendingFirstMessage after successful completion');
+        // Clearing pendingFirstMessage after successful completion
         
         // Only fetch title if we don't have one yet (title is still "New Chat")
         if (activeSession && activeSession.title === 'New Chat') {
-          console.log('🎯 First message stream complete, fetching title from backend');
+          // First message stream complete, fetching title from backend
           
           const fetchTitle = async () => {
             try {
@@ -107,10 +107,10 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
               const currentSession = sessions.find(s => s.id === sessionId);
               
               if (currentSession && currentSession.title !== 'New Chat') {
-                console.log('✅ Got backend title:', currentSession.title);
+                // Got backend title
                 renameSession(sessionId, currentSession.title);
               } else {
-                console.log('⚠️ Backend title still "New Chat", something went wrong');
+                // Backend title still "New Chat", something went wrong
               }
             } catch (error) {
               console.error('❌ Error fetching title:', error);
@@ -119,7 +119,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
           
           fetchTitle();
         } else {
-          console.log('🔄 Already have title:', activeSession?.title || 'undefined');
+          // Already have title
         }
         
         onFirstMessageSent?.();
@@ -127,13 +127,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
     }
   });
   
-  console.log('🔍 useChat hook debug:', Object.keys(chatHook));
-  console.log('🔍 Available functions:', {
-    messages: !!chatHook.messages,
-    sendMessage: typeof chatHook.sendMessage,
-    status: chatHook.status,
-    error: !!chatHook.error
-  });
+  // useChat hook debug
   
   const { 
     messages, 
@@ -168,25 +162,23 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   // Keyboard event listeners to handle back-gesture dismiss
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
-      console.log('⌨️ [ChatComponent] Keyboard DID SHOW - sessionId:', sessionId, 'height:', e.endCoordinates.height);
+      // Keyboard DID SHOW
       setKeyboardHeight(e.endCoordinates.height);
       setKeyboardVisible(true);
       setInputFocused(true);
-      console.log('⌨️ [ChatComponent] Set keyboardHeight:', e.endCoordinates.height, 'keyboardVisible:', true, 'inputFocused:', true);
     });
     
     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      console.log('⌨️ [ChatComponent] Keyboard DID HIDE - sessionId:', sessionId);
+      // Keyboard DID HIDE
       setKeyboardHeight(0);
       setKeyboardVisible(false);
       setInputFocused(false);
-      console.log('⌨️ [ChatComponent] Set keyboardHeight:', 0, 'keyboardVisible:', false, 'inputFocused:', false);
     });
 
-    console.log('⌨️ [ChatComponent] Keyboard listeners registered for sessionId:', sessionId);
+    // Keyboard listeners registered
     
     return () => {
-      console.log('⌨️ [ChatComponent] Removing keyboard listeners for sessionId:', sessionId);
+      // Removing keyboard listeners
       keyboardDidShowListener.remove();
       keyboardDidHideListener.remove();
     };
@@ -194,12 +186,12 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
 
   // Reset keyboard states when session changes
   useEffect(() => {
-    console.log('🔄 [ChatComponent] Resetting keyboard states for session change - sessionId:', sessionId);
+    // Resetting keyboard states for session change
     setInputFocused(false);
     setKeyboardHeight(0);
     setKeyboardVisible(false);
     setHasSentPendingMessage(false); // Reset pending message flag for new session
-    console.log('🔄 [ChatComponent] Reset complete - inputFocused: false, keyboardHeight: 0, keyboardVisible: false, hasSentPendingMessage: false');
+    // Reset complete
   }, [sessionId]);
 
   useEffect(() => {
@@ -213,14 +205,14 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   useEffect(() => {
     // Skip loading messages if we have a pending first message (new chat)
     if (pendingFirstMessage) {
-      console.log('🚫 Skipping message loading - have pendingFirstMessage');
+      // Skipping message loading - have pendingFirstMessage
       return;
     }
 
     const controller = new AbortController();
     
     const loadMessages = async () => {
-      console.log('📥 Loading messages for sessionId:', sessionId);
+      // Loading messages for sessionId
       
       try {
         const messages = await loadSessionMessagesRef.current(sessionId);
@@ -230,7 +222,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
             ...msg,
             id: msg.id || `${sessionId}-${index}-${Date.now()}`,
           }));
-          console.log('✅ Loaded', messagesWithIds.length, 'messages, setting to useChat');
+          // Loaded messages, setting to useChat
           setMessages([...messagesWithIds]);
           
           setTimeout(() => {
@@ -255,7 +247,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   // Auto-send pending first message immediately when sendMessage becomes available
   useEffect(() => {
     if (pendingFirstMessage && sendMessage && status === 'ready' && !hasSentPendingMessage) {
-      console.log('🚀 Auto-sending pending first message:', pendingFirstMessage);
+      // Auto-sending pending first message
       setHasSentPendingMessage(true); // Prevent infinite loop
       sendMessage({ text: pendingFirstMessage }); // useChat handles optimistic display
       // Note: Don't call onFirstMessageSent() immediately - wait for completion
@@ -265,14 +257,12 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   const handleSendMessage = async (messageText: string) => {
     if (status === 'streaming' || status === 'submitted') return;
     
-    console.log('📤 Sending message to sessionId:', sessionId);
-    console.log('📤 sendMessage type:', typeof sendMessage);
-    console.log('📤 Attempting to send:', messageText);
+    // Sending message to sessionId
     
     try {
       if (sendMessage) {
         await sendMessage({ text: messageText });
-        console.log('✅ Message sent successfully');
+        // Message sent successfully
       } else {
         console.error('❌ sendMessage is not available');
         throw new Error('SendMessage function not available');
@@ -296,12 +286,11 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
     const isAtBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 50;
     
     setIsScrolledToBottom(isAtBottom);
-    console.log('📜 Scroll position - isAtBottom:', isAtBottom, 'offset:', contentOffset.y);
+    // Scroll position update
   };
 
 
-  // Debug KeyboardAvoidingView state
-  console.log('⌨️ [ChatComponent] KeyboardAvoidingView render - enabled:', keyboardVisible, 'keyboardVisible:', keyboardVisible, 'inputFocused:', inputFocused, 'keyboardHeight:', keyboardHeight);
+  // KeyboardAvoidingView render state
 
   return (
     <KeyboardAvoidingView 

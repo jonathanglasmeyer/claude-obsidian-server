@@ -11,8 +11,7 @@ export function ChatScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const drawerContext = useDrawerContext();
-  console.log('🔍 ChatScreen drawerContext:', drawerContext);
-  console.log('🔍 ChatScreen drawerContext.openDrawer type:', typeof drawerContext.openDrawer);
+  // ChatScreen drawerContext initialization
   const { openDrawer } = drawerContext;
   const { sessionId, pendingFirstMessage } = route.params as { sessionId: string; pendingFirstMessage?: string };
   
@@ -35,7 +34,7 @@ export function ChatScreen() {
 
   const currentSession = sessions.find(s => s.id === sessionId);
 
-  console.log('💬 ChatScreen render - sessionId:', sessionId, 'drawer context available:', !!openDrawer);
+  // ChatScreen render
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -51,14 +50,12 @@ export function ChatScreen() {
         <ChatHeader
           title={currentSession?.title || 'Chat'}
           onMenuPress={() => {
-            console.log('🎯 ChatScreen onMenuPress called');
-            console.log('🔍 About to call openDrawer, type:', typeof openDrawer);
-            console.log('🔍 openDrawer value:', openDrawer);
+            // ChatScreen onMenuPress called
             try {
               if (typeof openDrawer === 'function') {
                 openDrawer();
               } else {
-                console.error('❌ openDrawer is not a function:', typeof openDrawer, openDrawer);
+                // openDrawer is not a function
               }
             } catch (error) {
               console.error('❌ ChatScreen openDrawer failed:', error);

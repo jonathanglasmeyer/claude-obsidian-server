@@ -95,7 +95,7 @@ export function SideMenu({
           }}>
             <TouchableOpacity 
               onPress={() => {
-                console.log('Starting new chat (welcome screen)');
+                // Starting new chat (welcome screen)
                 onCreateSession();
                 onClose();
               }}
@@ -214,7 +214,7 @@ export function SideMenu({
               <SessionItem
                 key={session.id}
                 onPress={() => {
-                  console.log('Select session:', session.id);
+                  // Select session
                   onSelectSession(session.id);
                   onClose();
                 }}

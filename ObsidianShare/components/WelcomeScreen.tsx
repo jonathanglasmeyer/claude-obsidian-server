@@ -15,13 +15,13 @@ export function WelcomeScreen({ onFirstMessage }: WelcomeScreenProps) {
   // Listen to keyboard events directly
   useEffect(() => {
     const keyboardDidShow = Keyboard.addListener('keyboardDidShow', (event) => {
-      console.log('⌨️ WelcomeScreen Keyboard DID SHOW:', event.endCoordinates.height);
+      // WelcomeScreen Keyboard DID SHOW
       setKeyboardVisible(true);
       setInputFocused(true); // Also set focus when keyboard shows
     });
     
     const keyboardDidHide = Keyboard.addListener('keyboardDidHide', () => {
-      console.log('⌨️ WelcomeScreen Keyboard DID HIDE - forcing both states to false');
+      // WelcomeScreen Keyboard DID HIDE
       setKeyboardVisible(false);
       setInputFocused(false); // Force reset on keyboard hide
     });
@@ -33,7 +33,7 @@ export function WelcomeScreen({ onFirstMessage }: WelcomeScreenProps) {
   }, []);
   
   const handleFocusChange = (focused: boolean) => {
-    console.log('🌟 WelcomeScreen handleFocusChange:', focused, '→ KeyboardAvoidingView enabled:', focused);
+    // WelcomeScreen handleFocusChange
     setInputFocused(focused);
   };
   
@@ -41,7 +41,7 @@ export function WelcomeScreen({ onFirstMessage }: WelcomeScreenProps) {
   // Enable KeyboardAvoidingView whenever keyboard is visible
   const shouldEnableKeyboardAvoiding = keyboardVisible;
   
-  console.log('🏠 WelcomeScreen render - inputFocused:', inputFocused, 'keyboardVisible:', keyboardVisible, 'KeyboardAvoidingView enabled:', shouldEnableKeyboardAvoiding);
+  // WelcomeScreen render
   
   return (
     <KeyboardAvoidingView 

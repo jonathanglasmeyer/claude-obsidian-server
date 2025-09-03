@@ -11,7 +11,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-console.log('📱 Screen width:', SCREEN_WIDTH, 'px - Drawer width:', DRAWER_WIDTH, 'px - Ratio:', (DRAWER_WIDTH/SCREEN_WIDTH*100).toFixed(1)+'%');
 const DRAWER_WIDTH = 330;
 const SNAP_THRESHOLD = 0.5;
 const VELOCITY_THRESHOLD = 300; // Lower threshold = more sensitive to flicks
@@ -29,7 +28,7 @@ export function ProgressiveDrawer({
   isOpen = false, 
   onOpenChange 
 }: ProgressiveDrawerProps) {
-  console.log('🎭 ProgressiveDrawer render - isOpen:', isOpen);
+  // ProgressiveDrawer render
   
   const drawerProgress = useSharedValue(isOpen ? 1 : 0);
   const isDrawerOpen = useSharedValue(isOpen);
@@ -37,9 +36,9 @@ export function ProgressiveDrawer({
 
   // Watch for external isOpen prop changes
   React.useEffect(() => {
-    console.log('🔄 External isOpen prop changed:', isOpen, 'current internal state:', isDrawerOpen.value);
+    // External isOpen prop changed
     if (isOpen !== isDrawerOpen.value) {
-      console.log('🔧 Syncing drawer state - prop:', isOpen, '→ internal:', isDrawerOpen.value);
+      // Syncing drawer state
       drawerProgress.value = withTiming(isOpen ? 1 : 0, { duration: 250 });
       isDrawerOpen.value = isOpen;
     }
@@ -63,7 +62,7 @@ export function ProgressiveDrawer({
   };
 
   const logTouchEvent = (eventType, x, y) => {
-    console.log(`[Touch] ${eventType}:`, { x, y });
+    // Touch logging disabled
   };
 
   // Create separate pan gesture instances with proper tap coexistence
@@ -97,18 +96,15 @@ export function ProgressiveDrawer({
       const deltaX = Math.abs(currentX - initialTouchX.value);
       const deltaY = Math.abs(currentY - initialTouchY.value);
       
-      runOnJS(debugLog)('onTouchesMove', { 
-        deltaX: deltaX.toFixed(1), 
-        deltaY: deltaY.toFixed(1) 
-      });
+      // Touch move delta calculation
       
       // Activate only if significant horizontal movement with minimal vertical
       if (deltaX > 25 && deltaX > deltaY * 1.5) {
-        runOnJS(debugLog)('ACTIVATING', 'swipe detected');
+        // Swipe detected - activating
         hasActivated.value = true;
         manager.activate();
       } else if (deltaY > 20) {
-        runOnJS(debugLog)('FAILING', 'vertical movement');
+        // Vertical movement - failing gesture
         manager.fail();
       }
     })
@@ -123,32 +119,17 @@ export function ProgressiveDrawer({
       hasActivated.value = false;
     })
     .onStart((event) => {
-      console.log('🤏 Pan gesture STARTED:', {
-        drawerOpen: isDrawerOpen.value,
-        startX: event.x.toFixed(1),
-        startY: event.y.toFixed(1),
-        translationX: event.translationX.toFixed(1),
-        translationY: event.translationY.toFixed(1)
-      });
+      // Pan gesture started
     })
     .onUpdate((event) => {
-      console.log('📈 Pan gesture UPDATE:', {
-        translationX: event.translationX.toFixed(1),
-        velocityX: event.velocityX.toFixed(1)
-      });
+      // Pan gesture update
       
       // Calculate progress based on current drawer state
       const currentOffset = isDrawerOpen.value ? DRAWER_WIDTH : 0;
       const newPosition = currentOffset + event.translationX;
       const progress = Math.max(0, Math.min(1, newPosition / DRAWER_WIDTH));
       
-      console.log('👆 Gesture update:', {
-        translationX: event.translationX.toFixed(1),
-        currentOffset,
-        newPosition: newPosition.toFixed(1),
-        progress: progress.toFixed(2),
-        drawerOpen: isDrawerOpen.value
-      });
+      // Gesture update
       
       drawerProgress.value = progress;
     })
@@ -156,17 +137,17 @@ export function ProgressiveDrawer({
       const velocity = event.velocityX;
       const currentProgress = drawerProgress.value;
       
-      console.log('🏁 Pan gesture ended - velocity:', velocity, 'progress:', currentProgress);
+      // Pan gesture ended
       
       // Determine final state based on velocity and position
       let shouldOpen = false;
       
       if (Math.abs(velocity) > VELOCITY_THRESHOLD) {
         shouldOpen = velocity > 0; // Positive velocity = rightward = open
-        console.log('📊 Decision by velocity:', shouldOpen);
+        // Decision by velocity
       } else {
         shouldOpen = currentProgress > SNAP_THRESHOLD;
-        console.log('📊 Decision by position:', shouldOpen);
+        // Decision by position
       }
       
       // Animate to final state
@@ -185,16 +166,12 @@ export function ProgressiveDrawer({
         if (finished) {
           isDrawerOpen.value = shouldOpen;
           runOnJS(notifyStateChange)(shouldOpen);
-          console.log('✅ Animation finished, drawer is now:', shouldOpen ? 'open' : 'closed');
+          // Animation finished
         }
       });
     })
     .onFinalize((event) => {
-      console.log('🏁 Pan gesture FINALIZE:', {
-        state: event.state,
-        translationX: event.translationX?.toFixed(1) || 'N/A',
-        velocityX: event.velocityX?.toFixed(1) || 'N/A'
-      });
+      // Pan gesture finalize logging disabled
     });
 
   // Create individual gesture instances to avoid conflicts
@@ -240,7 +217,7 @@ export function ProgressiveDrawer({
     .simultaneousWithExternalGesture(overlayPanGesture)
     .onEnd(() => {
       if (drawerProgress.value > 0) {
-        console.log('📱 Overlay tapped, closing drawer');
+        // Overlay tapped, closing drawer
         drawerProgress.value = withTiming(0, { 
           duration: 200,
           easing: Easing.out(Easing.cubic)

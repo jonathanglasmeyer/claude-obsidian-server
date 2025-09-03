@@ -32,20 +32,19 @@ function AppContent() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const handleDrawerChange = (open: boolean) => {
-    console.log('🎭 App handleDrawerChange:', open, '(current:', isDrawerOpen, ')');
+    // handleDrawerChange called
     try {
       // Dismiss keyboard when opening drawer
       if (open) {
         Keyboard.dismiss();
-        console.log('⌨️ Keyboard dismissed for drawer opening');
+        // Keyboard dismissed for drawer opening
       }
       setIsDrawerOpen(open);
-      console.log('✅ App drawer state changed to:', open);
+      // App drawer state changed
     } catch (error) {
       console.error('❌ App drawer state change failed:', error);
       console.error('❌ Error details:', error.name, error.message, error.stack);
       // Don't rethrow to prevent crash
-      console.log('🩹 Continuing despite drawer state error...');
     }
   };
 
@@ -54,15 +53,13 @@ function AppContent() {
     const originalError = console.error;
     console.error = (...args) => {
       if (args[0]?.includes?.('Warning: Cannot update a component')) {
-        console.log('🔍 React state update warning intercepted:', args);
+        // React state update warning intercepted
       }
       originalError.apply(console, args);
     };
 
     const handleError = (error: any, isFatal: boolean) => {
-      console.log('🚨 Global Error Handler:', { error, isFatal });
-      console.log('🚨 Error message:', error?.message);
-      console.log('🚨 Error stack:', error?.stack);
+      // Global error handler triggered
     };
 
     return () => {

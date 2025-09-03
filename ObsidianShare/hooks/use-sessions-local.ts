@@ -32,7 +32,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
   const refreshSessions = useCallback(async (preserveActiveSession = false) => {
     try {
       setIsLoading(true);
-      console.log('🔄 Loading sessions from backend API...');
+      // Loading sessions from backend API
       
       const response = await fetch(`${config.apiBaseUrl}/api/chats`);
       if (!response.ok) {
@@ -40,7 +40,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
       }
       
       const backendSessions = await response.json();
-      console.log('📥 Loaded sessions from backend:', backendSessions.length);
+      // Loaded sessions from backend
       
       // Convert backend format to frontend format
       const convertedSessions: ChatSession[] = backendSessions.map((session: any) => ({
@@ -82,7 +82,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
 
   const createSession = useCallback(async (title?: string): Promise<string> => {
     try {
-      console.log('🆕 Creating new session via backend API...');
+      // Creating new session via backend API
       
       const response = await fetch(`${config.apiBaseUrl}/api/chats`, {
         method: 'POST',
@@ -95,7 +95,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
       }
       
       const newSessionData = await response.json();
-      console.log('✅ Created session:', newSessionData.chatId);
+      // Created session
       
       const newSession: ChatSession = {
         id: newSessionData.chatId,
@@ -107,7 +107,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
       };
 
       setSessions(prev => [newSession, ...prev]);
-      console.log('🎯 Setting newly created session as active:', newSession.id);
+      // Setting newly created session as active
       setActiveSessionId(newSession.id);
       return newSession.id;
     } catch (error) {
@@ -123,7 +123,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
         messageCount: 0,
       };
       setSessions(prev => [newSession, ...prev]);
-      console.log('🎯 Setting fallback session as active:', fallbackId);
+      // Setting fallback session as active
       setActiveSessionId(fallbackId);
       return fallbackId;
     }
@@ -131,7 +131,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
 
   const deleteSession = useCallback(async (sessionId: string) => {
     try {
-      console.log('🗑️ Deleting session:', sessionId);
+      // Deleting session
       
       const response = await fetch(`${config.apiBaseUrl}/api/chats/${sessionId}`, {
         method: 'DELETE',
@@ -141,7 +141,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
         throw new Error(`Failed to delete session: ${response.status}`);
       }
       
-      console.log('✅ Deleted session from backend');
+      // Deleted session from backend
     } catch (error) {
       console.error('❌ Failed to delete session from backend:', error);
       // Continue with local deletion anyway
@@ -167,7 +167,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
 
   const loadSessionMessages = useCallback(async (sessionId: string): Promise<Message[]> => {
     try {
-      console.log('📥 Loading messages for session:', sessionId);
+      // Loading messages for session
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
@@ -187,7 +187,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
       }
       
       const data = await response.json();
-      console.log('✅ Loaded', data.messages?.length || 0, 'messages for session:', sessionId);
+      // Loaded messages for session
       return data.messages || [];
     } catch (error: any) {
       if (error?.name === 'TimeoutError') {
@@ -202,28 +202,21 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
   }, [config.apiBaseUrl]);
 
   const updateSessionMessages = useCallback((sessionId: string, messages: Message[]) => {
-    console.log('🔄 updateSessionMessages called for session:', sessionId, 'with', messages.length, 'messages');
+    // updateSessionMessages called for session
     setSessions(prev => {
       const updated = prev.map(session => 
         session.id === sessionId 
           ? { ...session, messages, updatedAt: new Date(), messageCount: messages.length }
           : session
       );
-      console.log('🔄 Updated sessions locally');
+      // Updated sessions locally
       return updated;
     });
   }, []);
 
   const renameSession = useCallback(async (sessionId: string, title: string) => {
     try {
-      console.log('📝 Renaming session via backend API:', sessionId, 'to:', title);
-      console.log('📝 API URL:', `${config.apiBaseUrl}/api/chats/${sessionId}`);
-      console.log('📝 Full request:', {
-        url: `${config.apiBaseUrl}/api/chats/${sessionId}`,
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title })
-      });
+      // Renaming session via backend API
       
       const response = await fetch(`${config.apiBaseUrl}/api/chats/${sessionId}`, {
         method: 'PUT',
@@ -240,7 +233,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
       }
       
       const updatedChat = await response.json();
-      console.log('✅ Renamed session successfully');
+      // Renamed session successfully
       
       // Update local state with server response
       setSessions(prev => prev.map(session => 
@@ -251,7 +244,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
     } catch (error) {
       console.error('❌ Failed to rename session:', error);
       // Fallback to local rename
-      console.log('🔄 Falling back to local rename');
+      // Falling back to local rename
       setSessions(prev => prev.map(session => 
         session.id === sessionId 
           ? { ...session, title, updatedAt: new Date() }

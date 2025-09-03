@@ -70,11 +70,11 @@ export function CustomDrawerContent({ onClose }: CustomDrawerContentProps) {
   };
 
   const handleConfirmRename = async (newTitle: string) => {
-    console.log('🔥 handleConfirmRename called with:', { sessionToRename, newTitle });
+    // handleConfirmRename called
     if (sessionToRename) {
-      console.log('🔥 About to call renameSession...');
+      // About to call renameSession
       await renameSession(sessionToRename, newTitle);
-      console.log('🔥 renameSession completed');
+      // renameSession completed
       setSessionToRename(null);
     }
   };

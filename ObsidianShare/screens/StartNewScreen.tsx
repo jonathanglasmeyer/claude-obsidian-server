@@ -13,8 +13,7 @@ export function StartNewScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const drawerContext = useDrawerContext();
-  console.log('🔍 StartNewScreen drawerContext:', drawerContext);
-  console.log('🔍 StartNewScreen drawerContext.openDrawer type:', typeof drawerContext.openDrawer);
+  // StartNewScreen drawerContext initialization
   const { openDrawer } = drawerContext;
   
   // Auto-detect server IP: Development builds or Expo Go
@@ -35,7 +34,7 @@ export function StartNewScreen() {
     isInitialized,
   } = useSessions(sessionConfig);
 
-  console.log('🖥️ StartNewScreen render - navigation available:', !!navigation.openDrawer);
+  // StartNewScreen render
 
   // Show loading while sessions are being loaded
   if (!isInitialized) {
@@ -52,10 +51,10 @@ export function StartNewScreen() {
   }
 
   const handleFirstMessage = async (message: string) => {
-    console.log('🚀 Creating new session with first message:', message);
+    // Creating new session with first message
     setPendingFirstMessage(message);
     const sessionId = await createSession('New Chat');
-    console.log('✅ Created new session:', sessionId);
+    // Created new session
     navigation.navigate('Chat' as never, { sessionId, pendingFirstMessage: message } as never);
   };
 

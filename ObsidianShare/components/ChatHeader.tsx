@@ -32,10 +32,10 @@ export function ChatHeader({ title, onMenuPress, onMorePress }: ChatHeaderProps)
         {/* Navigation Icon - BorderlessButton with Native Ripple */}
         <BorderlessButton
           onPress={() => {
-            console.log('🍔 Menu button pressed - BorderlessButton with native ripple!');
+            // Menu button pressed
             try {
               onMenuPress();
-              console.log('✅ Menu action executed');
+              // Menu action executed
             } catch (error) {
               console.error('❌ Menu action failed:', error);
             }
@@ -74,10 +74,10 @@ export function ChatHeader({ title, onMenuPress, onMorePress }: ChatHeaderProps)
         <BorderlessButton
           onPress={() => {
             if (onMorePress) {
-              console.log('⋮ More button pressed - BorderlessButton with native ripple!');
+              // More button pressed
               try {
                 onMorePress();
-                console.log('✅ More action executed');
+                // More action executed
               } catch (error) {
                 console.error('❌ More action failed:', error);
               }

@@ -14,7 +14,6 @@ interface ChatInputProps {
 }
 
 export function ChatInput({ onSend, disabled = false, placeholder = "Ask anything", showTopBorder = false, onFocusChange, inputFocused: controlledInputFocused }: ChatInputProps) {
-  console.log('💬 ChatInput component LOADED');
   const [inputText, setInputText] = useState('');
   const [localInputFocused, setLocalInputFocused] = useState(false);
   const textInputRef = useRef(null);
@@ -38,10 +37,6 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
     }
   };
 
-  console.log('🎨 ChatInput render - inputFocused:', inputFocused, 'paddingBottom:', inputFocused ? 8 : 24);
-
-  console.log('🧪 Using gesture-handler TextInput for native gesture coexistence');
-  console.log('🎨 Submit button - inputText:', `"${inputText}"`, 'trimmed:', `"${inputText.trim()}"`, 'backgroundColor:', inputText.trim() ? '#000' : '#d0d0d0');
 
   return (
     <View style={{
@@ -76,7 +71,6 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
           value={inputText}
           onChange={e => {
             const newText = e.nativeEvent.text;
-            console.log('📝 gesture-handler TextInput onChange:', newText, '→ button should be:', newText.trim() ? 'black' : 'gray');
             setInputText(newText);
           }}
           placeholder={placeholder}
@@ -85,29 +79,17 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
           blurOnSubmit={false}
           onSubmitEditing={handleSend}
           rejectResponderTermination={false}  // Allow parent responder to terminate (iOS)
-          onPressIn={() => console.log('📱 gesture-handler TextInput onPressIn')}
-          onPressOut={() => console.log('📱 gesture-handler TextInput onPressOut')}
           onFocus={(event) => {
-            console.log('🔍 gesture-handler TextInput onFocus event:', event);
-            console.log('🔍 Calling onFocusChange(true) for KeyboardAvoidingView');
             if (controlledInputFocused === undefined) {
               setLocalInputFocused(true);
             }
             onFocusChange?.(true);
           }}
           onBlur={(event) => {
-            console.log('🔍 gesture-handler TextInput onBlur event:', event);
-            console.log('🔍 Calling onFocusChange(false) for KeyboardAvoidingView');
             if (controlledInputFocused === undefined) {
               setLocalInputFocused(false);
             }
             onFocusChange?.(false);
-          }}
-          onSelectionChange={(event) => {
-            console.log('📝 TextInput selection change:', event.nativeEvent.selection);
-          }}
-          onContentSizeChange={(event) => {
-            console.log('📏 TextInput content size change:', event.nativeEvent.contentSize);
           }}
         />
         

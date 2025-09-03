@@ -13,8 +13,7 @@ export function MarkdownMessage({ content, isAssistant = false }: MarkdownMessag
   
   const styles = createStyles(isDark, isAssistant);
   
-  // Debug: Log the content to see what we're receiving
-  console.log('🔍 MarkdownMessage rendering:', { content: content.substring(0, 100), type: typeof content });
+  // MarkdownMessage rendering
   
   return (
     <Markdown style={styles}>
