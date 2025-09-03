@@ -65,14 +65,15 @@ export function ProgressiveDrawer({
     // Touch logging disabled
   };
 
-  // Create separate pan gesture instances with proper tap coexistence
+  // Create separate pan gesture instances with ScrollView compatibility
   const createPanGesture = () => Gesture.Pan()
     .manualActivation(true)
     .shouldCancelWhenOutside(false)  // Don't cancel when finger leaves the area
     .cancelsTouchesInView(false)     // ✅ KEY: Don't cancel touches for native UI components (iOS)
     .minDistance(15)                 // Only activate after significant movement
-    .blocksExternalGesture(false)    // Don't block child gestures
-    .simultaneousWithExternalGesture(true) // Allow simultaneous with child gestures
+    .activeOffsetX([-15, 15])        // ✅ Only activate for horizontal movement (drawer gesture)
+    .failOffsetY([-15, 15])          // ✅ Fail if moving vertically (let ScrollView handle it)
+    .simultaneousWithExternalGesture(true) // ✅ Allow ScrollView and other gestures to work
     .onTouchesDown((event, manager) => {
       'worklet';
       // Store initial touch position
