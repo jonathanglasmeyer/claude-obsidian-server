@@ -131,8 +131,28 @@ ssh hetzner "docker logs quietloop-caddy --tail 20 | grep -i acme"
 
 ---
 
-> **Reference Files:**
-> - `docs/server-api.md` - Bridge server technical documentation
-> - `docs/STATUS_INFRA.md` - Infrastructure deployment lessons learned
-> - `IMPLEMENTATION_HISTORY.md` - Detailed development logs
-> - **Infrastructure**: `~/Projects/quietloop-hetzner-infra/README.md` - Centralized infrastructure documentation
+## Documentation Quick Reference
+
+### 🏗️ Architecture & Setup
+- **Server API & Configuration**: `docs/architecture/server-api.md`
+- **Production Infrastructure**: `docs/architecture/infrastructure.md`
+
+### 🚀 Active Development  
+- **AI SDK v5 (All aspects)**: `docs/development/ai-sdk-v5-reference.md`
+- **React Native Implementation**: `docs/development/react-native-guide.md`
+
+### 🔧 Problem Solving
+- **AI SDK Issues**: `docs/troubleshooting/ai-sdk-issues.md`
+- **React Native Gestures**: `docs/troubleshooting/react-native-gestures.md`
+- **Advanced React Native**: `docs/troubleshooting/react-native-advanced.md`
+
+### 📚 Background Reference
+- **Web Implementation Journey**: `docs/implementation-logs/web-prototype-history.md`
+- **Mobile Implementation Journey**: `docs/implementation-logs/react-native-history.md`
+- **Infrastructure Deployment**: `~/Projects/quietloop-hetzner-infra/README.md`
+
+### 📋 Documentation Organization (September 2025)
+- **Consolidated Structure**: Reduced 14 fragmented files to 9 focused references
+- **Less Redundancy**: AI SDK v5 information unified from 4 → 1 comprehensive file  
+- **Clear Purpose**: Each file has specific use case and target audience
+- **Technical Details Preserved**: No information lost, better organized
