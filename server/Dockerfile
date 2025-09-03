@@ -22,19 +22,24 @@ RUN mkdir -p /home/node/.ssh /srv/claude-jobs/obsidian-vault && \
     chown -R node:node /home/node/.ssh && \
     chmod 700 /home/node/.ssh
 
-# Switch to node user and install Claude CLI + Python dependencies as node user
+# Switch to node user for Claude CLI and Python dependencies installation  
 USER node
-RUN curl -sSL https://claude.ai/install.sh | bash
 
-# Install Python dependencies in separate steps to avoid memory issues
-RUN pip3 install --user --break-system-packages uv sqlite-vec pyyaml
-RUN pip3 install --user --break-system-packages torch --index-url https://download.pytorch.org/whl/cpu
-RUN pip3 install --user --break-system-packages sentence-transformers langchain-huggingface
+# Install uv first (most stable, cacheable layer)
+RUN pip3 install --user --break-system-packages uv
 
-# Switch back to root to set up PATH for all users
+# Install Claude Code (separate layer for better debugging)
+RUN curl -sSL https://claude.ai/install.sh -o /tmp/claude-install.sh && \
+    bash /tmp/claude-install.sh && \
+    rm /tmp/claude-install.sh
+
+# Switch back to root to set up PATH for uv and Claude Code
 USER root
-RUN ln -s /home/node/.local/bin/claude /usr/local/bin/claude && \
-    ln -s /home/node/.local/bin/uv /usr/local/bin/uv
+RUN ln -s /home/node/.local/bin/uv /usr/local/bin/uv && \
+    ln -s /home/node/.local/bin/claude /usr/local/bin/claude
+
+# Note: Vector search dependencies will be managed by vault's pyproject.toml
+# Runtime: (cd .claude/vector-search && uv sync) installs exactly what's needed
 
 # Switch to node user for runtime
 USER node
