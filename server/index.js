@@ -167,6 +167,23 @@ app.get('/api/chats', async (req, res) => {
   }
 });
 
+// Get single chat
+app.get('/api/chats/:id', async (req, res) => {
+  try {
+    const chatId = req.params.id;
+    const chat = await sessionStore.getChat(chatId);
+    
+    if (!chat) {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
+    
+    res.json(chat);
+  } catch (error) {
+    console.error('❌ Error getting chat:', error);
+    res.status(500).json({ error: 'Failed to get chat' });
+  }
+});
+
 // Create new chat
 app.post('/api/chats', async (req, res) => {
   try {
@@ -181,7 +198,7 @@ app.post('/api/chats', async (req, res) => {
   }
 });
 
-// Get chat messages
+// Get chat messages  
 app.get('/api/chats/:id/messages', async (req, res) => {
   try {
     const chatId = req.params.id;

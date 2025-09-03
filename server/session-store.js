@@ -149,6 +149,31 @@ class SessionStore {
     }
   }
 
+  // Get single chat (metadata + messages)
+  async getChat(chatId) {
+    console.log('🔍 getChat called - connected:', this.connected, 'chatId:', chatId);
+    if (this.connected) {
+      try {
+        const chatData = await this.client.get(`chat:${chatId}`);
+        if (!chatData) {
+          console.log('❌ Chat not found in Redis:', chatId);
+          return null;
+        }
+        const chat = JSON.parse(chatData);
+        console.log('✅ Found chat in Redis:', chat.title);
+        return chat; // Return full chat object (not just messages)
+      } catch (error) {
+        console.error('Error getting chat from Redis:', error);
+        return null;
+      }
+    } else {
+      // Get from memory
+      console.log('⚠️ Using memory fallback for chat:', chatId);
+      const chat = this.memoryChats.get(chatId);
+      return chat || null;
+    }
+  }
+
   // Save chat messages (called from onFinish callback)
   // Returns the updated chat object with the generated title
   async saveChat(chatId, messages) {

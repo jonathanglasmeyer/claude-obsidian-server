@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useChat } from '@ai-sdk/react';
@@ -32,6 +32,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [hasSentPendingMessage, setHasSentPendingMessage] = useState(false);
+  const [titleFetched, setTitleFetched] = useState(false);
   
   // Fade in animation
   const fadeOpacity = useSharedValue(0);
@@ -64,8 +65,10 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   
   useEffect(() => {
     currentSessionIdRef.current = sessionId;
+    setTitleFetched(false); // Reset title fetch state for new session
     // Updated currentSessionIdRef
   }, [sessionId]);
+
 
   const chatHook = useChat({
     transport: new DefaultChatTransport({
@@ -82,35 +85,27 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
       console.error('🚨 useChat error:', error);
       setChatError(error);
     },
-    onFinish: async (message) => {
-      // onFinish called for sessionId
+    onFinish: async ({ message, messages }) => {
       setChatError(null);
       
       // Update session messages count immediately after message completion
-      if (message.messages && updateSessionMessages) {
-        // Updating session messages count
-        updateSessionMessages(sessionId, message.messages);
+      if (messages && updateSessionMessages) {
+        updateSessionMessages(sessionId, messages);
       }
       
       // Clear pending first message after successful completion
       if (pendingFirstMessage) {
-        // Clearing pendingFirstMessage after successful completion
-        
-        // Only fetch title if we don't have one yet (title is still "New Chat")
-        if (activeSession && activeSession.title === 'New Chat') {
-          // First message stream complete, fetching title from backend
+        // Fetch title for new session (only after first message completion)
+        if (!titleFetched) {
+          setTitleFetched(true);
           
           const fetchTitle = async () => {
             try {
-              const response = await fetch(`${apiBaseUrl}/api/chats`);
-              const sessions = await response.json();
-              const currentSession = sessions.find(s => s.id === sessionId);
+              const response = await fetch(`${apiBaseUrl}/api/chats/${sessionId}`);
+              const currentSession = await response.json();
               
               if (currentSession && currentSession.title !== 'New Chat') {
-                // Got backend title
                 renameSession(sessionId, currentSession.title);
-              } else {
-                // Backend title still "New Chat", something went wrong
               }
             } catch (error) {
               console.error('❌ Error fetching title:', error);
@@ -118,8 +113,6 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
           };
           
           fetchTitle();
-        } else {
-          // Already have title
         }
         
         onFirstMessageSent?.();

@@ -2,7 +2,6 @@
 import { Platform } from 'react-native';
 import structuredClone from '@ungap/structured-clone';
 
-console.log('🔧 Setting up official AI SDK React Native polyfills...');
 
 if (Platform.OS !== 'web') {
   const setupPolyfills = async () => {
@@ -17,14 +16,11 @@ if (Platform.OS !== 'web') {
 
       if (!('structuredClone' in global)) {
         polyfillGlobal('structuredClone', () => structuredClone);
-        console.log('✅ structuredClone polyfill installed (official pattern)');
       }
 
       polyfillGlobal('TextEncoderStream', () => TextEncoderStream);
-      console.log('✅ TextEncoderStream polyfill installed (official pattern)');
       
       polyfillGlobal('TextDecoderStream', () => TextDecoderStream);
-      console.log('✅ TextDecoderStream polyfill installed (official pattern)');
       
     } catch (error) {
       console.warn('⚠️ Official polyfills setup failed:', error.message);
@@ -41,6 +37,5 @@ if (Platform.OS !== 'web') {
   console.log('📱 Web platform detected - skipping mobile polyfills');
 }
 
-console.log('✅ Official AI SDK React Native polyfills ready');
 
 export {};

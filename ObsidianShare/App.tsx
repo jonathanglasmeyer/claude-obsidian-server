@@ -121,6 +121,12 @@ function AppContent() {
 }
 
 export default function App() {
+  // LEAVE THIS IN DON'T REMOVE - helpful for debugging app reloads
+  console.log('\n\n');
+  console.log('==================================================');
+  console.log('                  APP STARTUP                     ');  
+  console.log('==================================================');
+  console.log('\n');
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
