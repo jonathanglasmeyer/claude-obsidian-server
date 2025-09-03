@@ -5,13 +5,11 @@ services:
     image: redis:7-alpine
     container_name: obsidian-redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
     networks:
-      - obsidian-net
+      - quietloop-network
 
   server:
     build: 
@@ -32,11 +30,11 @@ services:
       - /srv/claude-jobs:/srv/claude-jobs:rw
       - /home/claude/.ssh:/home/node/.ssh:ro
     networks:
-      - obsidian-net
+      - quietloop-network
 
 volumes:
   redis_data:
 
 networks:
-  obsidian-net:
-    driver: bridge
+  quietloop-network:
+    external: true

@@ -72,33 +72,49 @@ curl http://localhost:3001/health                 # Via tunnel (direct to contai
 
 ## Production Infrastructure
 
-### Production Stack
-**Infrastructure**: `~/Projects/quietloop-hetzner-infra/` → deployed to `/opt/quietloop-infra/`
+### Clean Architecture ✅
+**Separation of Concerns**: Infrastructure repo handles ONLY reverse proxy, this project manages its own containers.
+
 ```
 obsidian.quietloop.dev (SSL: Let's Encrypt, DNS: Cloudflare Gray Cloud)
-├── quietloop-caddy      # Reverse proxy (ports 80/443) - main compose
-├── obsidian-server      # Node.js + AI SDK + Claude Code CLI (port 3001) - projects compose  
-└── obsidian-redis       # Session store with 24h TTL (port 6379) - projects compose
+├── quietloop-caddy      # Reverse proxy (ports 80/443) - infra repo
+├── obsidian-server      # Node.js + AI SDK + Claude Code CLI (port 3001) - THIS repo  
+└── obsidian-redis       # Session store with 24h TTL (port 6379) - THIS repo
 ```
+
+**Networks**: All services communicate via shared `quietloop-network` Docker network.
 
 ### Management Commands
 ```bash
-# Infrastructure management (Caddy proxy)
+# Infrastructure management (Caddy reverse proxy only)
 ssh hetzner "cd /opt/quietloop-infra && docker compose ps"
 ssh hetzner "cd /opt/quietloop-infra && docker compose restart caddy"
-
-# Obsidian services management (separate compose file)
-ssh hetzner "cd /opt/quietloop-infra/projects && docker compose -f docker-compose.all-projects.yml ps"  # May show cashflow env warning
-ssh hetzner "cd /opt/quietloop-infra/projects && docker compose -f docker-compose.all-projects.yml restart obsidian-server"
-# Alternative: Direct container management (avoids compose warnings)
-ssh hetzner "docker ps | grep obsidian"
-ssh hetzner "docker restart obsidian-server"
-ssh hetzner "docker logs obsidian-server --tail 20"
 ssh hetzner "docker logs quietloop-caddy --tail 20"
 
-# Infrastructure repository (local)
-cd ~/Projects/quietloop-hetzner-infra && cat README.md  # Deployment docs
-cd ~/Projects/quietloop-hetzner-infra && ls -la        # Project structure
+# THIS project's services (managed independently)
+ssh hetzner "cd ~/obsidian-bridge-server && docker compose ps"
+ssh hetzner "cd ~/obsidian-bridge-server && docker compose restart"
+ssh hetzner "docker logs obsidian-server --tail 20"
+ssh hetzner "docker logs obsidian-redis --tail 20"
+
+# Deployment (from local)
+./deploy.sh  # Deploys THIS project's containers to shared network
+```
+
+### Repository Separation
+```bash
+# Infrastructure repository (Caddy routing only)
+~/Projects/quietloop-hetzner-infra/
+├── caddy/                     # Reverse proxy config
+├── projects/obsidian-server/
+│   └── obsidian-server.caddy  # ONLY routing: obsidian.quietloop.dev → obsidian-server:3001
+└── scripts/deploy.sh          # Deploys Caddy
+
+# THIS project repository (Application containers)
+~/Projects/quietloop-claude-obsidian-server/
+├── docker-compose.yml         # Container definitions + quietloop-network
+├── deploy.sh                  # Deploys containers to shared network  
+└── server/                    # Application code
 ```
 
 ### Critical Configuration

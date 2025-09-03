@@ -37,6 +37,8 @@ remote_cmd "cd $REMOTE_PATH && \
     echo '📦 Installing/updating dependencies...' && \
     cd server && npm install --production && \
     cd .. && \
+    echo '🌐 Ensuring shared Docker network exists...' && \
+    docker network inspect quietloop-network >/dev/null 2>&1 || docker network create quietloop-network && \
     echo '🔄 Stopping existing services...' && \
     docker compose down || true && \
     echo '🚀 Starting services...' && \
