@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChatInput } from './ChatInput';
@@ -10,11 +10,43 @@ interface WelcomeScreenProps {
 export function WelcomeScreen({ onFirstMessage }: WelcomeScreenProps) {
   const insets = useSafeAreaInsets();
   const [inputFocused, setInputFocused] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  
+  // Listen to keyboard events directly
+  useEffect(() => {
+    const keyboardDidShow = Keyboard.addListener('keyboardDidShow', (event) => {
+      console.log('⌨️ Keyboard DID SHOW:', event.endCoordinates.height);
+      setKeyboardVisible(true);
+      setInputFocused(true); // Also set focus when keyboard shows
+    });
+    
+    const keyboardDidHide = Keyboard.addListener('keyboardDidHide', () => {
+      console.log('⌨️ Keyboard DID HIDE - forcing both states to false');
+      setKeyboardVisible(false);
+      setInputFocused(false); // Force reset on keyboard hide
+    });
+    
+    return () => {
+      keyboardDidShow.remove();
+      keyboardDidHide.remove();
+    };
+  }, []);
+  
+  const handleFocusChange = (focused: boolean) => {
+    console.log('🌟 WelcomeScreen handleFocusChange:', focused, '→ KeyboardAvoidingView enabled:', focused);
+    setInputFocused(focused);
+  };
+  
+  // Use keyboard visibility as the primary source of truth
+  // Enable KeyboardAvoidingView whenever keyboard is visible
+  const shouldEnableKeyboardAvoiding = keyboardVisible;
+  
+  console.log('🏠 WelcomeScreen render - inputFocused:', inputFocused, 'keyboardVisible:', keyboardVisible, 'KeyboardAvoidingView enabled:', shouldEnableKeyboardAvoiding);
   
   return (
     <KeyboardAvoidingView 
       behavior="padding"
-      enabled={inputFocused}
+      enabled={shouldEnableKeyboardAvoiding}
       style={{ 
         flex: 1, 
         backgroundColor: '#fff'
@@ -57,7 +89,8 @@ export function WelcomeScreen({ onFirstMessage }: WelcomeScreenProps) {
       <ChatInput
         onSend={onFirstMessage}
         placeholder="Type your message..."
-        onFocusChange={setInputFocused}
+        onFocusChange={handleFocusChange}
+        inputFocused={inputFocused}
       />
     </KeyboardAvoidingView>
   );

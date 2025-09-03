@@ -80,21 +80,29 @@ export function ChatInput({ onSend, disabled = false, placeholder = "Ask anythin
           blurOnSubmit={false}
           onSubmitEditing={handleSend}
           rejectResponderTermination={false}  // Allow parent responder to terminate (iOS)
-          onPressIn={() => console.log('📱 TextInput onPressIn')}
-          onPressOut={() => console.log('📱 TextInput onPressOut')}
-          onFocus={() => {
-            console.log('🔍 TextInput onFocus - setting inputFocused to true');
+          onPressIn={() => console.log('📱 gesture-handler TextInput onPressIn')}
+          onPressOut={() => console.log('📱 gesture-handler TextInput onPressOut')}
+          onFocus={(event) => {
+            console.log('🔍 gesture-handler TextInput onFocus event:', event);
+            console.log('🔍 Calling onFocusChange(true) for KeyboardAvoidingView');
             if (controlledInputFocused === undefined) {
               setLocalInputFocused(true);
             }
             onFocusChange?.(true);
           }}
-          onBlur={() => {
-            console.log('🔍 TextInput onBlur - setting inputFocused to false');
+          onBlur={(event) => {
+            console.log('🔍 gesture-handler TextInput onBlur event:', event);
+            console.log('🔍 Calling onFocusChange(false) for KeyboardAvoidingView');
             if (controlledInputFocused === undefined) {
               setLocalInputFocused(false);
             }
             onFocusChange?.(false);
+          }}
+          onSelectionChange={(event) => {
+            console.log('📝 TextInput selection change:', event.nativeEvent.selection);
+          }}
+          onContentSizeChange={(event) => {
+            console.log('📏 TextInput content size change:', event.nativeEvent.contentSize);
           }}
         />
         
