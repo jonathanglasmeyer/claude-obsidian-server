@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Keyboard } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -34,6 +34,11 @@ function AppContent() {
   const handleDrawerChange = (open: boolean) => {
     console.log('🎭 App handleDrawerChange:', open, '(current:', isDrawerOpen, ')');
     try {
+      // Dismiss keyboard when opening drawer
+      if (open) {
+        Keyboard.dismiss();
+        console.log('⌨️ Keyboard dismissed for drawer opening');
+      }
       setIsDrawerOpen(open);
       console.log('✅ App drawer state changed to:', open);
     } catch (error) {
