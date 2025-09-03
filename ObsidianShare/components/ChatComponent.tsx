@@ -30,6 +30,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   const [inputFocused, setInputFocused] = useState(false);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   
   // Fade in animation
   const fadeOpacity = useSharedValue(0);
@@ -166,22 +167,38 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   // Keyboard event listeners to handle back-gesture dismiss
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
+      console.log('⌨️ [ChatComponent] Keyboard DID SHOW - sessionId:', sessionId, 'height:', e.endCoordinates.height);
       setKeyboardHeight(e.endCoordinates.height);
+      setKeyboardVisible(true);
       setInputFocused(true);
-      console.log('⌨️ Keyboard shown, height:', e.endCoordinates.height);
+      console.log('⌨️ [ChatComponent] Set keyboardHeight:', e.endCoordinates.height, 'keyboardVisible:', true, 'inputFocused:', true);
     });
     
     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      console.log('⌨️ [ChatComponent] Keyboard DID HIDE - sessionId:', sessionId);
       setKeyboardHeight(0);
+      setKeyboardVisible(false);
       setInputFocused(false);
-      console.log('⌨️ Keyboard hidden via system (back-gesture, etc.)');
+      console.log('⌨️ [ChatComponent] Set keyboardHeight:', 0, 'keyboardVisible:', false, 'inputFocused:', false);
     });
 
+    console.log('⌨️ [ChatComponent] Keyboard listeners registered for sessionId:', sessionId);
+    
     return () => {
+      console.log('⌨️ [ChatComponent] Removing keyboard listeners for sessionId:', sessionId);
       keyboardDidShowListener.remove();
       keyboardDidHideListener.remove();
     };
-  }, []);
+  }, [sessionId]);
+
+  // Reset keyboard states when session changes
+  useEffect(() => {
+    console.log('🔄 [ChatComponent] Resetting keyboard states for session change - sessionId:', sessionId);
+    setInputFocused(false);
+    setKeyboardHeight(0);
+    setKeyboardVisible(false);
+    console.log('🔄 [ChatComponent] Reset complete - inputFocused: false, keyboardHeight: 0, keyboardVisible: false');
+  }, [sessionId]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -280,14 +297,18 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   };
 
 
+  // Debug KeyboardAvoidingView state
+  console.log('⌨️ [ChatComponent] KeyboardAvoidingView render - enabled:', keyboardVisible, 'keyboardVisible:', keyboardVisible, 'inputFocused:', inputFocused, 'keyboardHeight:', keyboardHeight);
+
   return (
-    <Animated.View style={[{ flex: 1 }, fadeAnimatedStyle]}>
-      <KeyboardAvoidingView 
-        behavior="padding" 
-        enabled={inputFocused}
-        style={{ flex: 1 }}
-      >
-      {/* Error Display */}
+    <KeyboardAvoidingView 
+      behavior="padding" 
+      enabled={keyboardVisible}
+      style={[{ flex: 1 }, fadeAnimatedStyle]}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={{ flex: 1 }}>
+          {/* Error Display */}
       {chatError && (
         <View style={{ 
           margin: 16, 
@@ -417,7 +438,8 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
           }
         }}
       />
+        </View>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
-    </Animated.View>
   );
 }
