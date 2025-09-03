@@ -306,9 +306,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
       enabled={keyboardVisible}
       style={[{ flex: 1 }, fadeAnimatedStyle]}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={{ flex: 1 }}>
-          {/* Error Display */}
+      {/* Error Display */}
       {chatError && (
         <View style={{ 
           margin: 16, 
@@ -438,8 +436,6 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
           }
         }}
       />
-        </View>
-      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }

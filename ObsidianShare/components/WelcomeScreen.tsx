@@ -15,13 +15,13 @@ export function WelcomeScreen({ onFirstMessage }: WelcomeScreenProps) {
   // Listen to keyboard events directly
   useEffect(() => {
     const keyboardDidShow = Keyboard.addListener('keyboardDidShow', (event) => {
-      console.log('⌨️ Keyboard DID SHOW:', event.endCoordinates.height);
+      console.log('⌨️ WelcomeScreen Keyboard DID SHOW:', event.endCoordinates.height);
       setKeyboardVisible(true);
       setInputFocused(true); // Also set focus when keyboard shows
     });
     
     const keyboardDidHide = Keyboard.addListener('keyboardDidHide', () => {
-      console.log('⌨️ Keyboard DID HIDE - forcing both states to false');
+      console.log('⌨️ WelcomeScreen Keyboard DID HIDE - forcing both states to false');
       setKeyboardVisible(false);
       setInputFocused(false); // Force reset on keyboard hide
     });
@@ -53,13 +53,12 @@ export function WelcomeScreen({ onFirstMessage }: WelcomeScreenProps) {
       }}
     >
       {/* Main content centered */}
-      <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-        <View style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          paddingHorizontal: 24
-        }}>
+      <View style={{
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 24
+      }}>
         <View style={{
           alignItems: 'center',
           marginBottom: 40
@@ -82,8 +81,7 @@ export function WelcomeScreen({ onFirstMessage }: WelcomeScreenProps) {
             What's on your mind?
           </Text>
         </View>
-        </View>
-      </TouchableWithoutFeedback>
+      </View>
 
       {/* Input at bottom */}
       <ChatInput
