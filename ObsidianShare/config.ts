@@ -10,13 +10,27 @@ export const getServerConfig = () => {
     return cachedConfig;
   }
   
-  // Auto-detect server IP: Development builds or Expo Go, with production fallback
-  const debuggerHost = Constants.debuggerHost?.split(':')[0] 
-    || Constants.experienceUrl?.match(/exp:\/\/([^:]+)/)?.[1]
-    || '192.168.178.147'; // Fallback to local IP for production builds
+  // Production vs Development configuration
+  const isProduction = !__DEV__ && !Constants.debuggerHost;
+  const productionUrl = process.env.EXPO_PUBLIC_API_BASE_URL_PROD;
+  
+  let apiBaseUrl: string;
+  
+  if (isProduction && productionUrl) {
+    // Production build: use production server
+    apiBaseUrl = productionUrl;
+    console.log('🚀 Production build detected - using production server');
+  } else {
+    // Development build: auto-detect server IP
+    const debuggerHost = Constants.debuggerHost?.split(':')[0] 
+      || Constants.experienceUrl?.match(/exp:\/\/([^:]+)/)?.[1]
+      || '192.168.178.147'; // Fallback to local IP
+    apiBaseUrl = `http://${debuggerHost}:3001`;
+    console.log('🔧 Development build detected - using local server');
+  }
     
   cachedConfig = {
-    apiBaseUrl: `http://${debuggerHost}:3001`,
+    apiBaseUrl,
     platform: 'mobile' as const,
   };
   

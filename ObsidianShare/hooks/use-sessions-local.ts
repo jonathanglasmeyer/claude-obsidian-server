@@ -36,7 +36,9 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
       setIsLoading(true);
       // Loading sessions from backend API
       
-      const response = await fetch(`${config.apiBaseUrl}/api/chats`);
+      const response = await fetch(`${config.apiBaseUrl}/api/chats`, {
+        headers: getApiHeaders(),
+      });
       if (!response.ok) {
         throw new Error(`Failed to load sessions: ${response.status}`);
       }
@@ -88,7 +90,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
       
       const response = await fetch(`${config.apiBaseUrl}/api/chats`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getApiHeaders(),
         body: JSON.stringify({ title: title || 'New Chat' }),
       });
       
@@ -137,6 +139,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
       
       const response = await fetch(`${config.apiBaseUrl}/api/chats/${sessionId}`, {
         method: 'DELETE',
+        headers: getApiHeaders(),
       });
       
       if (!response.ok && response.status !== 404) {
@@ -176,6 +179,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
       
       const response = await fetch(`${config.apiBaseUrl}/api/chats/${sessionId}/messages`, {
         signal: controller.signal,
+        headers: getApiHeaders(),
       });
       
       clearTimeout(timeoutId);
@@ -222,7 +226,7 @@ export function useSessions(config: SessionsConfig = { apiBaseUrl: '', platform:
       
       const response = await fetch(`${config.apiBaseUrl}/api/chats/${sessionId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getApiHeaders(),
         body: JSON.stringify({ title }),
       });
       
