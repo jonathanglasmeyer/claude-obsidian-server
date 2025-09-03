@@ -31,6 +31,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(true);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [hasSentPendingMessage, setHasSentPendingMessage] = useState(false);
   
   // Fade in animation
   const fadeOpacity = useSharedValue(0);
@@ -197,7 +198,8 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
     setInputFocused(false);
     setKeyboardHeight(0);
     setKeyboardVisible(false);
-    console.log('🔄 [ChatComponent] Reset complete - inputFocused: false, keyboardHeight: 0, keyboardVisible: false');
+    setHasSentPendingMessage(false); // Reset pending message flag for new session
+    console.log('🔄 [ChatComponent] Reset complete - inputFocused: false, keyboardHeight: 0, keyboardVisible: false, hasSentPendingMessage: false');
   }, [sessionId]);
 
   useEffect(() => {
@@ -252,12 +254,13 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
 
   // Auto-send pending first message immediately when sendMessage becomes available
   useEffect(() => {
-    if (pendingFirstMessage && sendMessage && status === 'ready') {
+    if (pendingFirstMessage && sendMessage && status === 'ready' && !hasSentPendingMessage) {
       console.log('🚀 Auto-sending pending first message:', pendingFirstMessage);
+      setHasSentPendingMessage(true); // Prevent infinite loop
       sendMessage({ text: pendingFirstMessage }); // useChat handles optimistic display
       // Note: Don't call onFirstMessageSent() immediately - wait for completion
     }
-  }, [pendingFirstMessage, sendMessage, status]);
+  }, [pendingFirstMessage, sendMessage, status, hasSentPendingMessage]);
 
   const handleSendMessage = async (messageText: string) => {
     if (status === 'streaming' || status === 'submitted') return;
