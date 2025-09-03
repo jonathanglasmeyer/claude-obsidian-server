@@ -147,6 +147,9 @@ function App() {
 cd ObsidianShare
 npm run start:logged  # Logs to terminal + metro-logs.txt file
 
+# Clear terminal output while keeping Metro running
+# Cmd+K - macOS Terminal: Clear all output including scrollback (WORKS)
+
 # Claude Code can then inspect logs via file reading
 # No need for Claude Code to manage Metro processes
 ```
