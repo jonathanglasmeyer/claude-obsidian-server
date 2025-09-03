@@ -188,6 +188,16 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
     }
   }, [messages.length, status]);
 
+  // Auto-scroll to bottom when keyboard appears
+  useEffect(() => {
+    if (keyboardVisible && messages.length > 0) {
+      // Delay scroll to ensure keyboard animation is complete
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 150);
+    }
+  }, [keyboardVisible, messages.length]);
+
   useEffect(() => {
     // Skip loading messages if we have a pending first message (new chat)
     if (pendingFirstMessage) {
