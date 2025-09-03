@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getApiHeaders } from '../config';
+
 // Platform-agnostic Message interface
 export interface Message {
   id?: string;

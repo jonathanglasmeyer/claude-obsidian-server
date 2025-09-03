@@ -9,7 +9,29 @@ import { extractDeltaFromChunk } from './delta-extractor.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const API_SECRET_KEY = process.env.API_SECRET_KEY;
 const sessionStore = new SessionStore();
+
+// API Key validation middleware
+const validateApiKey = (req, res, next) => {
+  // Skip validation for health check endpoint
+  if (req.path === '/health') {
+    return next();
+  }
+
+  if (!API_SECRET_KEY) {
+    console.error('❌ API_SECRET_KEY not configured');
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+
+  const clientApiKey = req.headers['x-api-key'];
+  if (!clientApiKey || clientApiKey !== API_SECRET_KEY) {
+    console.log('🔒 Unauthorized request - invalid or missing API key');
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  next();
+};
 
 // Middleware
 app.use(cors({
@@ -17,6 +39,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use(validateApiKey);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {

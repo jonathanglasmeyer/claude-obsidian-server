@@ -11,6 +11,15 @@ Mobile React Native app + bridge server for intelligently processing shared cont
 
 ## Architecture & Components
 
+### Security
+- **API Protection**: All endpoints secured with `x-api-key` header validation
+- **Environment Variables**: API keys stored in `.env` files (gitignored)
+  - Server: `API_SECRET_KEY` in `server/.env`
+  - Android: `EXPO_PUBLIC_API_SECRET_KEY` in `ObsidianShare/.env`
+  - Web: `API_SECRET_KEY` in `web-prototype/.env.local`
+- **Production**: Same API key deployed via Docker environment variables
+- **Access Control**: Only health endpoint (`/health`) bypasses authentication
+
 ### Local Development
 - **Server**: `server/` - Bridge server with AI SDK v5 + Redis session persistence
 - **Android**: `ObsidianShare/` - React Native with Drawer Navigator + streaming chat

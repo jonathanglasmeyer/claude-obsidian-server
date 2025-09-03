@@ -33,3 +33,20 @@ export const getServerConfig = () => {
   
   return cachedConfig;
 };
+
+// Get API headers with authentication
+export const getApiHeaders = () => {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  
+  // Add API key from environment variables if available
+  const apiKey = process.env.EXPO_PUBLIC_API_SECRET_KEY;
+  if (apiKey) {
+    headers['x-api-key'] = apiKey;
+  } else {
+    console.warn('⚠️ EXPO_PUBLIC_API_SECRET_KEY not found - API requests may fail');
+  }
+  
+  return headers;
+};

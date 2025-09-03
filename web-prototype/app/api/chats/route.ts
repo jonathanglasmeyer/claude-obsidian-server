@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { getApiHeaders } from '../../../lib/api-headers';
 
 const isLocalMode = process.env.NODE_ENV === 'development' && process.env.NEXT_PUBLIC_SERVER_MODE === 'local';
 const BACKEND_URL = isLocalMode ? 'http://localhost:3000' : 'http://localhost:3001';
@@ -7,7 +8,7 @@ export async function GET(req: NextRequest) {
   try {
     const response = await fetch(`${BACKEND_URL}/api/chats`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getApiHeaders(),
     });
     
     if (!response.ok) {
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     
     const response = await fetch(`${BACKEND_URL}/api/chats`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getApiHeaders(),
       body: JSON.stringify(body),
     });
     

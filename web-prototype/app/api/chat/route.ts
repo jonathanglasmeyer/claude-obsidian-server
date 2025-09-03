@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { getApiHeaders } from '../../../lib/api-headers';
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,9 +46,11 @@ export async function POST(req: NextRequest) {
       );
     }
     
+    const headers = getApiHeaders();
+
     const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: headers,
       body: JSON.stringify({ messages, chatId }),
       // No timeout - let Claude take as long as needed
     });

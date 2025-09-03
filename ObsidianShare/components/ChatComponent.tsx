@@ -7,7 +7,7 @@ import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { fetch as expoFetch } from 'expo/fetch';
 import { MessageBubble } from './MessageBubble';
-import { getServerConfig } from '../config';
+import { getServerConfig, getApiHeaders } from '../config';
 import { ChatInput } from './ChatInput';
 import { PulsingDots } from './PulsingDots';
 import { MarkdownMessage } from './MarkdownMessage';
@@ -67,6 +67,7 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
     transport: new DefaultChatTransport({
       fetch: expoFetch as unknown as typeof globalThis.fetch,
       api: `${apiBaseUrl}/api/chat`,
+      headers: getApiHeaders(),
     }),
     
     id: sessionId,
@@ -94,7 +95,9 @@ export function ChatComponent({ sessionId, activeSession, loadSessionMessages, u
           
           const fetchTitle = async () => {
             try {
-              const response = await fetch(`${apiBaseUrl}/api/chats/${sessionId}`);
+              const response = await fetch(`${apiBaseUrl}/api/chats/${sessionId}`, {
+                headers: getApiHeaders(),
+              });
               const currentSession = await response.json();
               
               if (currentSession && currentSession.title !== 'New Chat') {
