@@ -7,6 +7,7 @@ import { getServerConfig } from '../config';
 import { useDrawerContext } from '../contexts/DrawerContext';
 import { ChatHeader } from '../components/ChatHeader';
 import { WelcomeScreen } from '../components/WelcomeScreen';
+import { SplashScreen } from '../components/SplashScreen';
 
 export function StartNewScreen() {
   const [pendingFirstMessage, setPendingFirstMessage] = useState<string | null>(null);
@@ -25,18 +26,9 @@ export function StartNewScreen() {
 
   // StartNewScreen render
 
-  // Show loading while sessions are being loaded
+  // Show splash screen while sessions are being loaded
   if (!isInitialized) {
-    return (
-      <View style={{ 
-        flex: 1, 
-        justifyContent: 'center', 
-        alignItems: 'center',
-        paddingTop: insets.top 
-      }}>
-        <Text style={{ color: '#666' }}>Loading sessions...</Text>
-      </View>
-    );
+    return <SplashScreen />;
   }
 
   const handleFirstMessage = async (message: string) => {
