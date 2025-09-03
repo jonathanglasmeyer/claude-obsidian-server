@@ -4,6 +4,7 @@
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
+    "start:logged": "rm -f metro-logs.txt && expo start 2>&1 | tee metro-logs.txt",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web"
@@ -30,7 +31,8 @@
     "react-native-polyfill-globals": "^3.1.0",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "^5.4.0",
-    "react-native-svg": "15.11.2"
+    "react-native-svg": "15.11.2",
+    "expo-dev-client": "~5.2.4"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

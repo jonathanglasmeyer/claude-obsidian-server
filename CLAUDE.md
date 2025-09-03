@@ -49,12 +49,15 @@ OBSIDIAN_VAULT_PATH           # Local vault directory
 REDIS_URL                     # Optional, falls back to memory
 ```
 
-## React Native App (Android-First)
+## React Native App (Android-Only)
 
 ### Target Platform
+- **ANDROID ONLY**: No iOS development
 - **Primary Target**: Android (Pixel 9)
 - **Share Intent**: Android SEND actions for URLs/text
-- **Architecture**: Expo React Native with custom development build
+- **Architecture**: Expo React Native with Android custom development build
+
+**⚠️ IMPORTANT**: This project does NOT support iOS. All development, testing, and deployment is Android-focused only.
 
 ### Structure
 - **Share Extension** - Android Intent Filter for SEND actions  
@@ -136,7 +139,32 @@ function App() {
 
 ## Development Workflow
 
-### Local Development (Recommended)
+### Mobile App Development (Primary Workflow)
+**React Native Development with File-Based Logging for Claude Code Integration**
+
+```bash
+# User starts Metro with logging (in their own terminal)
+cd ObsidianShare
+npm run start:logged  # Logs to terminal + metro-logs.txt file
+
+# Claude Code can then inspect logs via file reading
+# No need for Claude Code to manage Metro processes
+```
+
+**Chosen Workflow Pattern:**
+- ✅ **User controls Metro**: Start/stop Metro in own terminal for better UX
+- ✅ **File-based logging**: `metro-logs.txt` enables Claude Code log inspection
+- ✅ **No remote debugging conflicts**: Metro logs work without DevTools issues  
+- ✅ **Stable debugging**: No "Reconnect DevTools" problems
+- ❌ **Claude Code does NOT start Metro**: Guidance only, user maintains control
+
+**Metro Commands Available:**
+```bash
+npm run start        # Standard Metro (terminal logs only)
+npm run start:logged # Metro + file logging (for Claude Code debugging)
+```
+
+### Web Prototype Development
 ```bash
 # Start local bridge server
 cd server
@@ -181,11 +209,13 @@ curl -X POST http://localhost:3000/api/chats \
   -d '{"title":"Test Chat"}'
 ```
 
-### Mobile App Development
+### Mobile App Development (Android Only)
 
-**Recommended Development Setup (Expo Go):**
+**⚠️ NO iOS DEVELOPMENT**: This project is Android-only. Do not run iOS simulators or attempt iOS builds.
+
+**Recommended Development Setup (Expo Go on Android):**
 ```bash
-# 1. Install Expo Go app from Play Store on your device
+# 1. Install Expo Go app from Google Play Store on your Android device
 
 # 2. Enable ADB over WiFi (optional, for debugging)
 adb tcpip 5555
@@ -205,7 +235,7 @@ npx expo start
 - ✅ **No app installation needed** - runs directly in Expo Go
 - ✅ **Full Hot Reload** over WiFi
 - ✅ **Automatic IP detection** via `Constants.experienceUrl`
-- ✅ **Easy setup** - just install Expo Go from Play Store
+- ✅ **Easy setup** - just install Expo Go from Google Play Store
 - ✅ **Native debugging**: `adb exec-out screencap -p > /tmp/screenshot.png`
 
 **IP Detection Logic:**
@@ -213,12 +243,17 @@ npx expo start
 - **Expo Go**: Extracts IP from `Constants.experienceUrl` (exp://IP:8081)
 - **No fallbacks**: Fails cleanly if no IP detected
 
-**Alternative: Development Builds** (more complex):
+**Alternative: Android Development Builds** (more complex):
 ```bash
-# Only if you need native modules or custom builds
+# Only if you need native modules or custom Android builds
 npx expo install expo-dev-client
 npx expo run:android --dev-client
 ```
+
+**🚫 NEVER RUN**: 
+- `npx expo run:ios` 
+- iOS Simulator commands
+- Any iOS-related development
 
 ## Common Issues & Solutions
 
