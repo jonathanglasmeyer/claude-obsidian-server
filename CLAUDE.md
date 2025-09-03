@@ -1,305 +1,138 @@
 # CLAUDE.md - Mobile Obsidian Vault Integration
 
 ## Project Overview
-Mobile React Native app that acts as a share target to intelligently process content into an Obsidian vault using Claude Code CLI. The app receives shared URLs/text, sends them to a bridge server that runs Claude Code CLI sessions, proposes vault organization, and executes git operations upon user confirmation.
+Mobile React Native app + bridge server for intelligently processing shared content into Obsidian vault using Claude Code CLI. Production-ready system with streaming AI chat interface.
 
-**Status: Phase 3.10 Complete** - Bridge server with session persistence and production-ready web prototype.
+## Current Status: Phase 4.2 Complete ✅
+- ✅ **Production Server**: `obsidian.quietloop.dev` (Docker on Hetzner VPS)
+- ✅ **Android App**: Full chat UI with session management (`ObsidianShare/`)
+- ✅ **Web Prototype**: Professional chat interface (`web-prototype/`)
+- 🔄 **Next**: Android Share Intent integration (Phase 4.3)
 
-## Architecture
+## Architecture & Components
 
-**Components:**
-- **Web Prototype (Next.js 14)** - Professional chat interface with tool visualization ✅
-- **Mobile App (RN)** - Share target with streaming UI *(Phase 4)*
-- **Bridge Server (Node.js)** - AI SDK v5 integration with Claude Code provider ✅
-- **Session Store (Redis)** - Session persistence with 24h TTL ✅  
-- **Obsidian Vault (Git)** - Target repository with existing CLAUDE.md rules ✅
+### Local Development
+- **Server**: `server/` - Bridge server with AI SDK v5 + Redis session persistence
+- **Android**: `ObsidianShare/` - React Native with Drawer Navigator + streaming chat
+- **Web**: `web-prototype/` - Next.js with AI SDK hooks
+- **Vault**: Claude Code CLI operates in actual Obsidian vault directory
 
-**Current Flow:**
-1. **Web Prototype**: Browser → `useChat()` → `/api/chat` → `streamText()` → Claude Code CLI ✅
-2. **Session Management**: Redis persistence with 24h TTL + conversation history ✅
-3. **Mobile Flow**: Share URL/text → RN app → Session API → Bridge server *(Phase 4)*
-4. Server uses AI SDK with Claude Code provider (vault context)
-5. Claude proposes file location/format via streaming
-6. User confirms/modifies → Claude executes + commits to git
+## Quick Development Commands
 
-## Bridge Server
-
-**For detailed technical documentation, see:** [`docs/server-api.md`](docs/server-api.md)
-
-The bridge server provides AI-powered chat functionality using AI SDK v5 with Claude Code provider integration. Key features:
-
-- **Direct streaming**: Real-time AI responses via Server-Sent Events
-- **Session persistence**: Redis-backed chat history with 24h TTL
-- **Vault integration**: Claude Code CLI operates in actual Obsidian vault
-- **Performance-first**: Streaming prioritized, persistence happens async
-
-### Quick Reference
+### Start Development Environment
 ```bash
-# Main chat endpoint
-POST /api/chat                  → AI SDK v5 streaming + session persistence
+# Local bridge server
+cd server && OBSIDIAN_VAULT_PATH=/Users/jonathan.glasmeyer/Projects/obsidian-vault CLAUDE_CODE_OAUTH_TOKEN=$CLAUDE_CODE_OAUTH_TOKEN node index.js
 
-# Session management
-GET  /api/chats                 → List all chat sessions
-POST /api/chats                 → Create new chat session
-DELETE /api/chats/:id          → Delete chat session
+# Web prototype
+cd web-prototype && pnpm run dev  # → http://localhost:3002
 
-# Environment setup
-CLAUDE_CODE_OAUTH_TOKEN        # From `claude setup-token`  
-OBSIDIAN_VAULT_PATH           # Local vault directory
-REDIS_URL                     # Optional, falls back to memory
+# Android development (Expo Go)
+cd ObsidianShare && npx expo start  # → exp://192.168.178.147:8081
 ```
 
-## React Native App (Android-Only)
-
-### Target Platform
-- **ANDROID ONLY**: No iOS development
-- **Primary Target**: Android (Pixel 9)
-- **Share Intent**: Android SEND actions for URLs/text
-- **Architecture**: Expo React Native with Android custom development build
-
-**⚠️ IMPORTANT**: This project does NOT support iOS. All development, testing, and deployment is Android-focused only.
-
-### Structure
-- **Share Extension** - Android Intent Filter for SEND actions  
-- **StreamingText** - Live Claude response display with react-native-vercel-ai
-- **ProposalView** - File preview with confirm/modify actions
-- **API Client** - Session-persistent connection to bridge server
-
-### Platform Integration
-- **Android Intent Filter** for SEND actions (URLs, text content)
-- **Session-based API** for robust message persistence  
-- **Official AI SDK** with React Native polyfills ([Best Practices](./RN_AI_SDK_BEST_PRACTICES.md))
-- **Metro Bundler** with package exports enabled
-- **Custom Development Build** for native features
-
-## Current Tech Stack
-
-### Bridge Server (Production Ready)
-- **AI Integration**: `ai-sdk-provider-claude-code` + Vercel AI SDK v5
-- **Session Management**: Redis with 24h TTL + in-memory fallback
-- **Streaming**: Native AI SDK v5 `streamText()` with message persistence
-- **Vault Context**: Claude Code CLI operates in actual Obsidian vault directory
-- **Infrastructure**: Docker + Redis on Hetzner VPS
-
-### Web Prototype (Production Ready)
-- **Frontend**: Next.js 14 + React 18 + AI SDK v5 + AI Elements
-- **UI**: Professional chat with tool visualization, session management
-- **Features**: Multi-session chats, conversation persistence, real-time streaming
-- **Development**: Smart local/tunnel mode detection
-
-## Current Capabilities
-
-### Vault Intelligence ✅
-- Reads actual `CLAUDE.md` rules from your vault
-- Recognizes vault structure and content organization
-- Uses custom Python scripts for complex queries (`uv run .claude/scripts/query-frontmatter.py`)
-- Multilingual support (German/English tested)
-
-### Chat Features ✅  
-- **Multi-session management**: Create, rename, delete conversations
-- **Session persistence**: Redis + localStorage with 24h TTL
-- **Real-time streaming**: Token-by-token AI responses
-- **Tool visualization**: File operations shown in collapsible UI cards
-- **Professional UX**: AI Elements components, custom avatars, loading states
-
-## Development Guidelines
-
-### React Native App Component Organization (`ObsidianShare/`)
-- **Separate Components:** Extract reusable components into individual files in `ObsidianShare/components/` directory
-- **File Naming:** Use PascalCase for component files (e.g., `PulsingDots.tsx`, `MessageBubble.tsx`)
-- **Clean Imports:** Import from dedicated component files instead of inline definitions in `App.tsx`
-- **Single Responsibility:** Each component file should contain one primary component
-- **TypeScript:** All component files should use `.tsx` extension with proper typing
-
-### React Native Code Organization Pattern
-```typescript
-// ❌ Bad: Inline component definitions in App.tsx
-function App() {
-  function PulsingDots() { /* animation logic */ }
-  function MessageBubble() { /* message rendering */ }
-  return <View>...</View>;
-}
-
-// ✅ Good: Separate component files
-// ObsidianShare/components/PulsingDots.tsx
-export function PulsingDots() { /* animation logic */ }
-
-// ObsidianShare/components/MessageBubble.tsx  
-export function MessageBubble() { /* message rendering */ }
-
-// ObsidianShare/App.tsx
-import { PulsingDots } from './components/PulsingDots';
-import { MessageBubble } from './components/MessageBubble';
-function App() {
-  return <View>...</View>;
-}
-```
-
-**Note:** This pattern applies specifically to the React Native mobile app. Web prototype and server components follow their own organization patterns.
-
-## Development Workflow
-
-### Mobile App Development (Primary Workflow)
-**React Native Development with File-Based Logging for Claude Code Integration**
-
+### Production Access
 ```bash
-# User starts Metro with logging (in their own terminal)
-cd ObsidianShare
-npm run start:logged  # Logs to terminal + metro-logs.txt file
-
-# Clear terminal output while keeping Metro running
-# Cmd+K - macOS Terminal: Clear all output including scrollback (WORKS)
-
-# Claude Code can then inspect logs via file reading
-# No need for Claude Code to manage Metro processes
-```
-
-**Chosen Workflow Pattern:**
-- ✅ **User controls Metro**: Start/stop Metro in own terminal for better UX
-- ✅ **File-based logging**: `metro-logs.txt` enables Claude Code log inspection
-- ✅ **No remote debugging conflicts**: Metro logs work without DevTools issues  
-- ✅ **Stable debugging**: No "Reconnect DevTools" problems
-- ❌ **Claude Code does NOT start Metro**: Guidance only, user maintains control
-
-**Metro Commands Available:**
-```bash
-npm run start        # Standard Metro (terminal logs only)
-npm run start:logged # Metro + file logging (for Claude Code debugging)
-```
-
-### Web Prototype Development
-```bash
-# Start local bridge server
-cd server
-OBSIDIAN_VAULT_PATH=/Users/jonathan.glasmeyer/Projects/obsidian-vault \
-CLAUDE_CODE_OAUTH_TOKEN=$CLAUDE_CODE_OAUTH_TOKEN \
-node index.js
-
-# Start web prototype (separate terminal)
-cd web-prototype
-pnpm run dev
-# → http://localhost:3002
-```
-
-### Production Testing via SSH Tunnel
-```bash
-# Start SSH tunnel to production server
+# SSH tunnel for testing
 ssh -L 3001:localhost:3001 hetzner -N &
 
-# Test tunnel health
-curl -s http://localhost:3001/health
-
-# Start web prototype against tunnel
-cd web-prototype && pnpm run dev
+# Health checks
+curl https://obsidian.quietloop.dev/health        # Production
+curl http://localhost:3001/health                 # Via tunnel
 ```
 
-### Quick Health Checks
+
+## Android App Structure (`ObsidianShare/`)
+- **Architecture**: Stack Navigator + Custom Drawer System (not standard RN Drawer)
+- **Core Flow**: `App.tsx` → `ProgressiveDrawer` wrapping `StartNewScreen`/`ChatScreen`
+- **Navigation**: 2 screens (StartNew, Chat) with custom drawer overlay via `DrawerProvider` context
+- **Components**: 15 custom components (2030+ lines), including `ChatComponent`, `MessageBubble`, `CustomDrawerContent`
+- **State**: `SessionsProvider` + `DrawerProvider` contexts with production API integration
+- **UI**: Material Design 3 (React Native Paper) with custom drawer animations
+- **Features**: Full-featured chat with session management, real-time AI streaming, Markdown rendering
+
+### Android Development Workflow
+- **Primary**: Expo Go on Android device (no installation needed)
+- **Alternative**: Custom development build for native features
+- **Debugging**: File-based logging (`metro-logs.txt`) for Claude Code inspection
+  ```bash
+  # User starts Metro with file logging (you don't - ask him to do it!)
+  cd ObsidianShare && npm run start:logged  # → metro-logs.txt for Claude Code
+  ```
+- **⚠️ Android Only**: No iOS development in this project
+
+## Production Infrastructure
+
+### Production Stack
+**Infrastructure**: `~/Projects/quietloop-hetzner-infra/` → deployed to `/opt/quietloop-infra/`
+```
+obsidian.quietloop.dev (SSL: Let's Encrypt, DNS: Cloudflare Gray Cloud)
+├── quietloop-caddy      # Reverse proxy (ports 80/443)
+├── obsidian-server      # Node.js + AI SDK + Claude Code CLI (port 3000)
+└── obsidian-redis       # Session store with 24h TTL (port 6379)
+```
+
+### Management Commands
 ```bash
-# Local server
-curl -s http://localhost:3000/health
+# Server management
+ssh hetzner "cd /opt/quietloop-infra && docker compose ps"
+ssh hetzner "cd /opt/quietloop-infra && docker compose restart caddy"
+ssh hetzner "docker logs obsidian-server --tail 20"
+ssh hetzner "docker logs quietloop-caddy --tail 20"
 
-# Production via tunnel
-curl -s http://localhost:3001/health
-
-# Test AI streaming
-curl -X POST http://localhost:3000/api/chat?chatId=test \
-  -H "Content-Type: application/json" \
-  -d '{"messages":[{"role":"user","content":"Hello"}]}'
-
-# Test session management
-curl -X POST http://localhost:3000/api/chats \
-  -H "Content-Type: application/json" \
-  -d '{"title":"Test Chat"}'
+# Infrastructure repository (local)
+cd ~/Projects/quietloop-hetzner-infra && cat README.md  # Deployment docs
+cd ~/Projects/quietloop-hetzner-infra && ls -la        # Project structure
 ```
 
-### Mobile App Development (Android Only)
-
-**⚠️ NO iOS DEVELOPMENT**: This project is Android-only. Do not run iOS simulators or attempt iOS builds.
-
-**Recommended Development Setup (Expo Go on Android):**
-```bash
-# 1. Install Expo Go app from Google Play Store on your Android device
-
-# 2. Enable ADB over WiFi (optional, for debugging)
-adb tcpip 5555
-arp -a | grep -i "192.168.178"  # Find your device IP
-adb connect [DEVICE_IP]:5555    # Usually 192.168.178.162
-
-# 3. Start Expo development server
-cd ObsidianShare
-npx expo start
-
-# 4. In Expo Go app: "Enter URL manually" 
-# Enter: exp://192.168.178.147:8081
-# (Or scan QR code from terminal/browser at localhost:8081)
-```
-
-**Development Benefits:**
-- ✅ **No app installation needed** - runs directly in Expo Go
-- ✅ **Full Hot Reload** over WiFi
-- ✅ **Automatic IP detection** via `Constants.experienceUrl`
-- ✅ **Easy setup** - just install Expo Go from Google Play Store
-- ✅ **Native debugging**: `adb exec-out screencap -p > /tmp/screenshot.png`
-
-**IP Detection Logic:**
-- **Development builds**: Uses `Constants.debuggerHost`  
-- **Expo Go**: Extracts IP from `Constants.experienceUrl` (exp://IP:8081)
-- **No fallbacks**: Fails cleanly if no IP detected
-
-**Alternative: Android Development Builds** (more complex):
-```bash
-# Only if you need native modules or custom Android builds
-npx expo install expo-dev-client
-npx expo run:android --dev-client
-```
-
-**🚫 NEVER RUN**: 
-- `npx expo run:ios` 
-- iOS Simulator commands
-- Any iOS-related development
+### Critical Configuration
+- **Server**: Hetzner VPS (49.13.63.69) 
+- **DNS**: Must use Cloudflare ⚪ **DNS Only** (not 🟠 Proxied) for Let's Encrypt
+- **SSL**: Let's Encrypt via Caddy, automatic renewal every 60 days
+- **Data**: Redis persistence with Docker volumes, 24h session TTL
+- **Network**: `quietloop-network` Docker network
+- **Environment**: `CLAUDE_CODE_OAUTH_TOKEN` + `OBSIDIAN_VAULT_PATH` required
 
 ## Common Issues & Solutions
 
-**❌ "Invalid settings: cwd: Working directory must exist"**
-- **Cause**: Wrong vault path for local development
-- **Fix**: Use local vault path: `OBSIDIAN_VAULT_PATH=/Users/jonathan.glasmeyer/Projects/obsidian-vault`
+### SSL/DNS Issues
+```bash
+# Check DNS propagation
+nslookup obsidian.quietloop.dev
 
-**❌ Requests timeout or connection refused**
-- **Cause**: SSH tunnel died or port conflict
-- **Fix**: Restart tunnel: `pkill -f "ssh.*3001:localhost:3001" && ssh -L 3001:localhost:3001 hetzner -N &`
+# Check certificate status
+curl -v https://obsidian.quietloop.dev/health
+
+# Debug Caddy SSL issues
+ssh hetzner "docker logs quietloop-caddy --tail 20 | grep -i acme"
+```
+
+### Development Issues
+**❌ "Invalid settings: cwd: Working directory must exist"**
+- Fix: `OBSIDIAN_VAULT_PATH=/Users/jonathan.glasmeyer/Projects/obsidian-vault`
+
+**❌ SSH tunnel connection refused**
+- Fix: `pkill -f "ssh.*3001:localhost:3001" && ssh -L 3001:localhost:3001 hetzner -N &`
 
 **❌ Sessions not persisting**
-- **Check**: Redis connection in health endpoint response
-- **Fix**: Start Redis locally: `redis-server` or use Docker: `docker run -p 6379:6379 redis`
-- **Fallback**: Server automatically uses in-memory storage if Redis unavailable
+- Check: Redis connection in `/health` endpoint
+- Fix: Start local Redis or use in-memory fallback
 
-**❌ "Claude CLI not found" or authentication errors**
-- **Check**: `claude --version && claude auth status`
-- **Fix**: Run `claude setup-token` and set `CLAUDE_CODE_OAUTH_TOKEN` env var
+**❌ Claude CLI authentication**
+- Fix: `claude setup-token` → set `CLAUDE_CODE_OAUTH_TOKEN`
 
-## Infrastructure
+## Development Guidelines
 
-- **Production**: Hetzner VPS with Docker Compose (Node.js + Redis)
-- **Development**: Local with SSH tunnel to production  
-- **Security**: Isolated `claude` user, SSH keys, container isolation
+### Component Organization (Android)
+- **Separate components**: Extract to `ObsidianShare/components/`
+- **PascalCase files**: `MessageBubble.tsx`, not inline definitions
+- **TypeScript**: All `.tsx` files with proper typing
 
-## Current Status ✅
-
-**Phase 3.10 Complete**:
-- ✅ Bridge server with Redis session persistence
-- ✅ Professional web prototype with tool visualization
-- ✅ Production deployment on Hetzner with SSH tunnel access
-- ✅ Multi-session chat with conversation history
-- ✅ Real-time AI streaming with vault intelligence
-- ✅ Zero-conversion AI SDK v5 pipeline end-to-end
-
-**Ready for**: Phase 4 mobile app development with proven session-persistent chat API
-
-**Next Phase**: React Native app using session-persistent API with proven backend architecture.
 
 ---
 
 > **Reference Files:**
-> - `PLAN.md` - Current status and development workflow
-> - `IMPLEMENTATION_HISTORY.md` - Detailed technical logs (Phase 0-3.10)  
-> - `NEXT_STEPS.md` - Phase 4+ future development plans
+> - `docs/server-api.md` - Bridge server technical documentation
+> - `docs/STATUS_INFRA.md` - Infrastructure deployment lessons learned
+> - `IMPLEMENTATION_HISTORY.md` - Detailed development logs
+> - **Infrastructure**: `~/Projects/quietloop-hetzner-infra/README.md` - Centralized infrastructure documentation
