@@ -6,7 +6,11 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { PaperProvider } from 'react-native-paper';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { enableScreens } from 'react-native-screens';
 import Constants from 'expo-constants';
+
+// Enable react-native-screens for better performance and Fabric compatibility
+enableScreens();
 import { SessionsProvider } from './components/SessionsProvider';
 import { paperTheme, LightTheme } from './theme';
 import { StartNewScreen } from './screens/StartNewScreen';
