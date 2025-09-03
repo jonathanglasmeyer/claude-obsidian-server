@@ -42,12 +42,12 @@ cd ObsidianShare && npx expo start  # → exp://192.168.178.147:8081
 
 ### Production Access
 ```bash
-# SSH tunnel for testing
+# SSH tunnel for testing production container directly
 ssh -L 3001:localhost:3001 hetzner -N &
 
-# Health checks
-curl https://obsidian.quietloop.dev/health        # Production
-curl http://localhost:3001/health                 # Via tunnel
+# Health checks  
+curl https://obsidian.quietloop.dev/health        # Production (via Caddy)
+curl http://localhost:3001/health                 # Via tunnel (direct to container)
 ```
 
 
@@ -76,16 +76,23 @@ curl http://localhost:3001/health                 # Via tunnel
 **Infrastructure**: `~/Projects/quietloop-hetzner-infra/` → deployed to `/opt/quietloop-infra/`
 ```
 obsidian.quietloop.dev (SSL: Let's Encrypt, DNS: Cloudflare Gray Cloud)
-├── quietloop-caddy      # Reverse proxy (ports 80/443)
-├── obsidian-server      # Node.js + AI SDK + Claude Code CLI (port 3000)
-└── obsidian-redis       # Session store with 24h TTL (port 6379)
+├── quietloop-caddy      # Reverse proxy (ports 80/443) - main compose
+├── obsidian-server      # Node.js + AI SDK + Claude Code CLI (port 3001) - projects compose  
+└── obsidian-redis       # Session store with 24h TTL (port 6379) - projects compose
 ```
 
 ### Management Commands
 ```bash
-# Server management
+# Infrastructure management (Caddy proxy)
 ssh hetzner "cd /opt/quietloop-infra && docker compose ps"
 ssh hetzner "cd /opt/quietloop-infra && docker compose restart caddy"
+
+# Obsidian services management (separate compose file)
+ssh hetzner "cd /opt/quietloop-infra/projects && docker compose -f docker-compose.all-projects.yml ps"  # May show cashflow env warning
+ssh hetzner "cd /opt/quietloop-infra/projects && docker compose -f docker-compose.all-projects.yml restart obsidian-server"
+# Alternative: Direct container management (avoids compose warnings)
+ssh hetzner "docker ps | grep obsidian"
+ssh hetzner "docker restart obsidian-server"
 ssh hetzner "docker logs obsidian-server --tail 20"
 ssh hetzner "docker logs quietloop-caddy --tail 20"
 
