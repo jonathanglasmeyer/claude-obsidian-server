@@ -1,0 +1,94 @@
+# === DOCKER IGNORE FILE ===
+# Prevents build artifacts and temporary files from being sent to Docker context
+# This dramatically reduces transfer time and image size
+
+# === ANDROID BUILD ARTIFACTS ===
+# CMake and native build artifacts - these are MASSIVE
+**/.cxx/
+**/.cmake/
+**/CMakeCache.txt
+**/CMakeFiles/
+**/cmake_install.cmake
+**/build.ninja
+**/*.ninja_deps
+**/*.ninja_log
+
+# Gradle build system
+**/.gradle/
+**/build/
+**/app/build/
+**/android/app/build/
+
+# Android native libraries and outputs  
+**/libs/
+**/obj/
+**/jniLibs/
+**/*.so
+**/*.a
+**/*.o
+
+# === REACT NATIVE ARTIFACTS ===
+# Metro bundler
+metro-logs.txt
+metro.config.js.bak
+**/.metro/
+
+# React Native build outputs
+**/android/app/src/main/assets/
+**/ios/build/
+**/ios/DerivedData/
+
+# === NODE.JS & NPM ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# === DEVELOPMENT & DEBUGGING ===
+# Logs
+*.log
+logs/
+**/*.log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+
+# === GIT & VERSION CONTROL ===
+.git/
+.gitignore
+README.md
+
+# === RUNTIME & TEMPORARY ===
+# Caches
+.cache/
+**/.cache/
+tmp/
+temp/
+
+# Environment variables (security)
+.env.local
+.env.development.local  
+.env.test.local
+.env.production.local
+
+# === TESTING ===
+coverage/
+.nyc_output/
+
+# === DOCKER ITSELF ===
+Dockerfile*
+.dockerignore
+docker-compose*.yml

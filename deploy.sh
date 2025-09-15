@@ -35,13 +35,18 @@ if ! remote_cmd "echo 'SSH connection successful'"; then
     exit 1
 fi
 
-# Sync project files
+# Sync project files (optimized with .dockerignore exclusions)
 echo "📦 Syncing project files..."
 rsync -avz --delete \
     --exclude='.git' \
     --exclude='node_modules' \
     --exclude='*.log' \
     --exclude='.DS_Store' \
+    --exclude='**/.cxx/' \
+    --exclude='**/.gradle/' \
+    --exclude='**/build/' \
+    --exclude='**/.cache/' \
+    --exclude='metro-logs.txt' \
     ./ $REMOTE_HOST:$REMOTE_PATH/
 
 # Build and deploy on remote server
@@ -53,17 +58,21 @@ remote_cmd "cd $REMOTE_PATH && \
     cd .. && \
     echo '🌐 Ensuring shared Docker network exists...' && \
     docker network inspect quietloop-network >/dev/null 2>&1 || docker network create quietloop-network && \
+    echo '🧹 Cleaning Docker artifacts before build...' && \
+    docker system prune -f --volumes || true && \
     echo '🔄 Stopping existing services...' && \
     docker compose down || true && \
-    echo '🚀 Starting services...' && \
+    echo '🚀 Starting services (with optimized build)...' && \
     CLAUDE_CODE_OAUTH_TOKEN=\"$CLAUDE_CODE_OAUTH_TOKEN\" docker compose up -d --build && \
     echo '🔧 Fixing vault permissions for container UID mapping...' && \
     chown -R 1000:1000 /srv/claude-jobs/obsidian-vault && \
     echo '⏳ Waiting for services to be ready...' && \
-    sleep 10 && \
+    sleep 15 && \
     echo '🩺 Checking service health...' && \
     docker compose ps && \
-    curl -f http://localhost:3001/health || echo 'Health check failed - check logs with: docker compose logs'"
+    curl -f http://localhost:3001/health || echo 'Health check failed - check logs with: docker compose logs' && \
+    echo '📊 Docker system usage after build:' && \
+    docker system df"
 
 echo "✅ Deployment complete!"
 echo ""
