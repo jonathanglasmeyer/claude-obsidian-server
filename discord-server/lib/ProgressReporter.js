@@ -1,3 +1,9 @@
+import {
+  ContainerBuilder,
+  TextDisplayBuilder,
+  MessageFlags
+} from 'discord.js';
+
 export class ProgressReporter {
   constructor(channel) {
     this.channel = channel;
@@ -5,7 +11,7 @@ export class ProgressReporter {
     this.startTime = null;
     this.toolCalls = [];
     this.lastUpdate = 0;
-    this.updateThrottle = 3000; // Min 3s between intermediate updates
+    this.updateThrottle = 1000; // 1s for live updates
   }
 
   /**
@@ -58,9 +64,23 @@ export class ProgressReporter {
       return;
     }
 
-    // Send intermediate update for ANY tool use
+    // Send minimal live tool update using Components v2
     try {
-      await this.channel.send(description);
+      // Remove duplicate tool name from description if present
+      const cleanDescription = description.startsWith(`${toolName}:`)
+        ? description.slice(toolName.length + 2) // Remove "ToolName: "
+        : description;
+
+      const toolContainer = new ContainerBuilder()
+        .addTextDisplayComponents(
+          textDisplay => textDisplay.setContent(`**${toolName}**: \`${cleanDescription}\``)
+        );
+
+      await this.channel.send({
+        components: [toolContainer],
+        flags: MessageFlags.IsComponentsV2
+      });
+
       this.lastUpdate = now;
 
       // Continue typing after intermediate message
@@ -145,8 +165,7 @@ export class ProgressReporter {
         return `Grep: "${toolInput?.pattern || 'search'}"`;
 
       case 'Bash':
-        const cmd = toolInput?.command?.slice(0, 50) || 'command';
-        return `Bash: ${cmd}${toolInput?.command?.length > 50 ? '...' : ''}`;
+        return `Bash: ${toolInput?.command || 'command'}`;
 
       case 'WebFetch':
         const domain = this._extractDomain(toolInput?.url);
