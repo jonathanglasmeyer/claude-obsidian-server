@@ -1,0 +1,14 @@
+{
+  "name": "discord-claude-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "unbuffer bun --watch bot.js 2>&1 | tee bot.log"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.115",
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.3.1"
+  }
+}
