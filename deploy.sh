@@ -8,6 +8,16 @@ echo "🚀 Deploying Claude Obsidian Bridge Server to Hetzner..."
 REMOTE_HOST="hetzner"
 REMOTE_PATH="~/obsidian-bridge-server"
 PROJECT_NAME="quietloop-claude-obsidian-server"
+SERVICE_URL="https://obsidian.quietloop.dev"
+
+# Load port validation from infra repo
+INFRA_SCRIPTS="../quietloop-hetzner-infra/scripts"
+if [ -f "$INFRA_SCRIPTS/validate-local-ports.sh" ]; then
+    source "$INFRA_SCRIPTS/validate-local-ports.sh"
+else
+    echo "⚠️ Port validation script not found - skipping validation"
+    validate_local_ports() { return 0; }
+fi
 
 # Load Claude token from local server/.env
 if [ -f server/.env ]; then
@@ -23,14 +33,12 @@ else
     exit 1
 fi
 
-# Function to run commands on remote host
-remote_cmd() {
-    ssh $REMOTE_HOST "$1"
-}
+# Pre-deployment validation
+validate_local_ports "$PROJECT_NAME" || exit 1
 
-# Check if SSH connection works
+# Test SSH connection
 echo "🔍 Testing SSH connection..."
-if ! remote_cmd "echo 'SSH connection successful'"; then
+if ! ssh "$REMOTE_HOST" "echo 'SSH connection successful'"; then
     echo "❌ SSH connection failed. Please check your SSH configuration."
     exit 1
 fi
@@ -52,14 +60,19 @@ rsync -avz --delete \
 # Build and deploy on remote server
 echo "🔨 Building and starting services on remote server..."
 
-remote_cmd "cd $REMOTE_PATH && \
+# Use centralized cleanup if available
+if command -v cleanup_docker_system >/dev/null 2>&1; then
+    cleanup_docker_system "$REMOTE_HOST"
+else
+    ssh "$REMOTE_HOST" "cd $REMOTE_PATH && docker system prune -f --volumes || true"
+fi
+
+ssh "$REMOTE_HOST" "cd $REMOTE_PATH && \
     echo '📦 Installing/updating dependencies...' && \
     cd server && npm install --production && \
     cd .. && \
     echo '🌐 Ensuring shared Docker network exists...' && \
     docker network inspect quietloop-network >/dev/null 2>&1 || docker network create quietloop-network && \
-    echo '🧹 Cleaning Docker artifacts before build...' && \
-    docker system prune -f --volumes || true && \
     echo '🔄 Stopping existing services...' && \
     docker compose down || true && \
     echo '🚀 Starting services (with optimized build)...' && \
@@ -67,19 +80,25 @@ remote_cmd "cd $REMOTE_PATH && \
     echo '🔧 Fixing vault permissions for container UID mapping...' && \
     chown -R 1000:1000 /srv/claude-jobs/obsidian-vault && \
     echo '⏳ Waiting for services to be ready...' && \
-    sleep 15 && \
-    echo '🩺 Checking service health...' && \
-    docker compose ps && \
-    curl -f http://localhost:3001/health || echo 'Health check failed - check logs with: docker compose logs' && \
-    echo '📊 Docker system usage after build:' && \
-    docker system df"
+    sleep 15"
 
-echo "✅ Deployment complete!"
-echo ""
-echo "🔗 Service endpoints:"
-echo "   Health: https://obsidian.quietloop.dev/health"
-echo "   API: https://obsidian.quietloop.dev/api/"
-echo ""
-echo "📊 Monitor with:"
-echo "   ssh $REMOTE_HOST 'cd $REMOTE_PATH && docker compose logs -f'"
-echo "   ssh $REMOTE_HOST 'cd $REMOTE_PATH && docker compose ps'"
+# Post-deployment verification (if utilities available)
+if command -v check_docker_health >/dev/null 2>&1; then
+    check_docker_health "$REMOTE_HOST" "3001"
+    deployment_summary "$PROJECT_NAME" "$REMOTE_HOST" "$SERVICE_URL"
+else
+    # Fallback health check
+    echo "🩺 Checking service health..."
+    ssh "$REMOTE_HOST" "cd $REMOTE_PATH && docker compose ps"
+    ssh "$REMOTE_HOST" "curl -f http://localhost:3001/health || echo 'Health check failed - check logs'"
+
+    echo "✅ Deployment complete!"
+    echo ""
+    echo "🔗 Service endpoints:"
+    echo "   Health: $SERVICE_URL/health"
+    echo "   API: $SERVICE_URL/api/"
+    echo ""
+    echo "📊 Monitor with:"
+    echo "   ssh $REMOTE_HOST 'cd $REMOTE_PATH && docker compose logs -f'"
+    echo "   ssh $REMOTE_HOST 'cd $REMOTE_PATH && docker compose ps'"
+fi

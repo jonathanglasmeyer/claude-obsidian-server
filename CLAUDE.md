@@ -26,6 +26,18 @@ Mobile React Native app + bridge server for intelligently processing shared cont
 - **Web**: `web-prototype/` - Next.js with AI SDK hooks
 - **Vault**: Claude Code CLI operates in actual Obsidian vault directory
 
+### Port Allocation
+- **Production**: Port `3001` (registered in `/opt/quietloop-infra/PORT-REGISTRY.md`)
+- **Local Dev**: Port `3001` (matches production)
+- **Web Prototype**: Port `3002` (development only)
+- **Redis**: Port `6379` (internal only)
+- **Next Available**: Port `3003` (for new services)
+
+**⚠️ Port Requirements:**
+- ALWAYS check `PORT-REGISTRY.md` before choosing ports
+- Use `validate_port_usage()` in deployment scripts
+- Update registry when deploying new services
+
 ## Quick Development Commands
 
 ### Start Development Environment
