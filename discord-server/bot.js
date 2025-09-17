@@ -5,6 +5,7 @@ import { Client, GatewayIntentBits, EmbedBuilder } from 'discord.js';
 import { query } from '@anthropic-ai/claude-code';
 import { ThreadManager } from './lib/ThreadManager.js';
 import { ResponseFormatter } from './lib/ResponseFormatter.js';
+import { ErrorHandler } from './lib/ErrorHandler.js';
 
 const client = new Client({
   intents: [
@@ -14,9 +15,10 @@ const client = new Client({
   ]
 });
 
-// Initialize ThreadManager and ResponseFormatter
+// Initialize ThreadManager, ResponseFormatter and ErrorHandler
 const threadManager = new ThreadManager();
 const responseFormatter = new ResponseFormatter();
+const errorHandler = new ErrorHandler();
 
 // Cleanup old conversations every hour
 setInterval(() => {
@@ -68,37 +70,47 @@ client.on('messageCreate', async (message) => {
     // Build conversation context
     const conversationPrompt = threadManager.buildConversationPrompt(thread.id, message.content);
 
-    // Process with Claude Code SDK
+    // Process with Claude Code SDK with retry logic
     console.log('🤖 Calling Claude with conversation context...');
-    const stream = query({
-      prompt: conversationPrompt,
-      options: {
-        cwd: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault'
+
+    const claudeResult = await errorHandler.retryOperation(async () => {
+      const stream = query({
+        prompt: conversationPrompt,
+        options: {
+          cwd: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault'
+        }
+      });
+
+      let fullResponse = '';
+      let usage = null;
+      let duration = null;
+
+      for await (const msg of stream) {
+        if (msg.type === 'system') {
+          console.log(`📋 Claude session: ${msg.session_id}`);
+        }
+        if (msg.type === 'assistant') {
+          const textContent = msg.message.content
+            .filter(c => c.type === 'text')
+            .map(c => c.text)
+            .join('');
+          fullResponse += textContent;
+        }
+        if (msg.type === 'result') {
+          fullResponse = msg.result;
+          usage = msg.usage;
+          duration = msg.duration_ms;
+          break;
+        }
       }
+
+      return { fullResponse, usage, duration };
+    }, {
+      context: 'Claude processing',
+      maxRetries: 3
     });
 
-    let fullResponse = '';
-    let usage = null;
-    let duration = null;
-
-    for await (const msg of stream) {
-      if (msg.type === 'system') {
-        console.log(`📋 Claude session: ${msg.session_id}`);
-      }
-      if (msg.type === 'assistant') {
-        const textContent = msg.message.content
-          .filter(c => c.type === 'text')
-          .map(c => c.text)
-          .join('');
-        fullResponse += textContent;
-      }
-      if (msg.type === 'result') {
-        fullResponse = msg.result;
-        usage = msg.usage;
-        duration = msg.duration_ms;
-        break;
-      }
-    }
+    const { fullResponse, usage, duration } = claudeResult;
 
     // Handle response with smart chunking
     const chunks = responseFormatter.chunkResponse(fullResponse);
@@ -143,9 +155,14 @@ client.on('messageCreate', async (message) => {
 
       await thread.send({ embeds: [headerEmbed] });
 
-      // Send chunked response
+      // Send chunked response with retry logic
       await responseFormatter.sendChunkedResponse(
-        (content) => thread.send(content),
+        async (content) => {
+          return await errorHandler.retryOperation(
+            () => thread.send(content),
+            { context: 'Discord message send', maxRetries: 2 }
+          );
+        },
         chunks
       );
     }
@@ -158,20 +175,41 @@ client.on('messageCreate', async (message) => {
     console.log(`📊 Thread stats:`, threadManager.getStats());
 
   } catch (error) {
-    console.error('❌ Error processing message:', error);
+    // Generate unique error ID for tracking
+    const errorId = Date.now().toString(36) + Math.random().toString(36).substr(2);
 
-    // Show error in Discord
-    const errorEmbed = new EmbedBuilder()
-      .setTitle('❌ Processing Failed')
-      .setDescription(`Error: ${error.message}`)
-      .setColor('#FF0000')
-      .setTimestamp();
+    // Log error with full context
+    errorHandler.logError(error, {
+      errorId,
+      userId: message.author.id,
+      username: message.author.tag,
+      threadId: thread?.id,
+      channelId: message.channel.id,
+      messageContent: message.content.slice(0, 100), // First 100 chars for context
+      messageLength: message.content.length,
+      timestamp: Date.now()
+    });
+
+    // Create user-friendly error embed
+    const errorEmbed = errorHandler.createErrorEmbed(error, {
+      errorId,
+      userId: message.author.id
+    });
 
     if (thread) {
       try {
-        await thread.send({ embeds: [errorEmbed] });
+        await thread.send({ embeds: [new EmbedBuilder(errorEmbed)] });
       } catch (discordError) {
-        console.error('❌ Failed to send error to Discord:', discordError);
+        // Log Discord error separately
+        errorHandler.logError(discordError, {
+          errorId: errorId + '_discord',
+          originalErrorId: errorId,
+          userId: message.author.id,
+          threadId: thread?.id,
+          context: 'Failed to send error message to Discord'
+        });
+
+        console.error('💥 Failed to send error to Discord - this is bad!');
       }
     }
   }
