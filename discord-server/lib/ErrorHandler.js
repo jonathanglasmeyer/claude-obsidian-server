@@ -278,10 +278,10 @@ export class ErrorHandler {
    */
   _getErrorColor(severity) {
     switch (severity) {
-      case 'critical': return '#DC143C'; // Crimson
-      case 'warning': return '#FF8C00';  // Dark orange
-      case 'info': return '#1E90FF';     // Dodger blue
-      default: return '#FF0000';         // Red
+      case 'critical': return 0xDC143C; // Crimson
+      case 'warning': return 0xFF8C00;  // Dark orange
+      case 'info': return 0x1E90FF;     // Dodger blue
+      default: return 0xFF0000;         // Red
     }
   }
 

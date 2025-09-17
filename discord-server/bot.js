@@ -6,6 +6,7 @@ import { query } from '@anthropic-ai/claude-code';
 import { ThreadManager } from './lib/ThreadManager.js';
 import { ResponseFormatter } from './lib/ResponseFormatter.js';
 import { ErrorHandler } from './lib/ErrorHandler.js';
+import { ProgressReporter } from './lib/ProgressReporter.js';
 
 const client = new Client({
   intents: [
@@ -58,14 +59,9 @@ client.on('messageCreate', async (message) => {
       thread = message.channel;
     }
 
-    // Show immediate processing feedback
-    const statusMessage = await thread.send({
-      embeds: [new EmbedBuilder()
-        .setTitle('🔄 Processing with Claude...')
-        .setDescription('Analyzing your content and updating vault')
-        .setColor('#FFA500')
-        .setTimestamp()]
-    });
+    // Start progress reporting with typing indicator
+    const progressReporter = new ProgressReporter(thread);
+    await progressReporter.start();
 
     // Build conversation context
     const conversationPrompt = threadManager.buildConversationPrompt(thread.id, message.content);
@@ -96,6 +92,10 @@ client.on('messageCreate', async (message) => {
             .join('');
           fullResponse += textContent;
         }
+        if (msg.type === 'tool_use') {
+          // Report tool usage to progress tracker
+          await progressReporter.reportToolUse(msg.tool_name, msg.tool_input);
+        }
         if (msg.type === 'result') {
           fullResponse = msg.result;
           usage = msg.usage;
@@ -112,48 +112,34 @@ client.on('messageCreate', async (message) => {
 
     const { fullResponse, usage, duration } = claudeResult;
 
+    // Stop progress reporting
+    progressReporter.stop();
+
     // Handle response with smart chunking
     const chunks = responseFormatter.chunkResponse(fullResponse);
     const chunkingStats = responseFormatter.getChunkingStats(fullResponse, chunks);
 
     console.log('📊 Response chunking stats:', chunkingStats);
+    console.log('📊 Progress stats:', progressReporter.getStats());
 
     if (chunks.length === 1) {
-      // Single response - update existing status message
-      const successEmbed = new EmbedBuilder()
-        .setTitle('✅ Processing Complete')
-        .setDescription(chunks[0])
-        .setColor('#00FF00')
-        .setTimestamp();
-
-      if (usage) {
-        successEmbed.addFields([
-          { name: 'Duration', value: `${duration}ms`, inline: true },
-          { name: 'Tokens', value: `${usage.totalTokens || 'N/A'}`, inline: true }
-        ]);
-      }
-
-      await statusMessage.edit({ embeds: [successEmbed] });
+      // Single response - send enhanced summary embed
+      const summaryEmbed = progressReporter.createSummary(fullResponse, usage, duration);
+      await thread.send({ embeds: [new EmbedBuilder(summaryEmbed)] });
     } else {
-      // Multi-part response - delete status message and send chunks
-      await statusMessage.delete();
+      // Multi-part response - send summary header then chunks
+      const summaryEmbed = progressReporter.createSummary(
+        `Response sent in ${chunks.length} parts due to length`,
+        usage,
+        duration
+      );
+      summaryEmbed.fields.push({
+        name: '📄 Parts',
+        value: `${chunks.length}`,
+        inline: true
+      });
 
-      // Create header message for multi-part response
-      const headerEmbed = new EmbedBuilder()
-        .setTitle('✅ Processing Complete')
-        .setDescription(`Response sent in ${chunks.length} parts due to length`)
-        .setColor('#00FF00')
-        .setTimestamp();
-
-      if (usage) {
-        headerEmbed.addFields([
-          { name: 'Duration', value: `${duration}ms`, inline: true },
-          { name: 'Tokens', value: `${usage.totalTokens || 'N/A'}`, inline: true },
-          { name: 'Parts', value: `${chunks.length}`, inline: true }
-        ]);
-      }
-
-      await thread.send({ embeds: [headerEmbed] });
+      await thread.send({ embeds: [new EmbedBuilder(summaryEmbed)] });
 
       // Send chunked response with retry logic
       await responseFormatter.sendChunkedResponse(
@@ -175,6 +161,11 @@ client.on('messageCreate', async (message) => {
     console.log(`📊 Thread stats:`, threadManager.getStats());
 
   } catch (error) {
+    // Stop progress reporting on error
+    if (typeof progressReporter !== 'undefined') {
+      progressReporter.stop();
+    }
+
     // Generate unique error ID for tracking
     const errorId = Date.now().toString(36) + Math.random().toString(36).substr(2);
 
