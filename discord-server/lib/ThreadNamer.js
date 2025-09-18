@@ -92,16 +92,66 @@ class ThreadNamer {
   async createThreadImmediate(message) {
     const content = message.content;
 
+    // Defensive check: see if thread already exists for this message
+    try {
+      if (message.hasThread) {
+        console.log(`📝 Thread already exists for this message, fetching...`);
+        // Fetch the existing thread
+        const channel = message.channel;
+        const threads = await channel.threads.fetchActive();
+        const existingThread = threads.threads.find(thread => thread.ownerId === message.author.id);
+
+        if (existingThread) {
+          console.log(`📝 Using existing thread: "${existingThread.name}"`);
+          return existingThread;
+        }
+      }
+    } catch (error) {
+      console.log(`🔍 No existing thread found, creating new one...`);
+      // Continue with thread creation
+    }
+
     // Create thread immediately with user content
     const immediateTitle = this.createImmediateThreadName(content);
-    const thread = await message.startThread({
-      name: immediateTitle,
-      autoArchiveDuration: 1440, // 24 hours
-      reason: 'Claude conversation thread'
-    });
 
-    console.log(`📝 Thread created immediately: "${immediateTitle}"`);
-    return thread;
+    try {
+      const thread = await message.startThread({
+        name: immediateTitle,
+        autoArchiveDuration: 1440, // 24 hours
+        reason: 'Claude conversation thread'
+      });
+
+      console.log(`📝 Thread created immediately: "${immediateTitle}"`);
+      return thread;
+    } catch (error) {
+      // Handle the specific "thread already exists" error
+      if (error.code === 160004) {
+        console.log(`⚠️ Thread already exists for this message (Discord API Error 160004)`);
+
+        // Try to find the existing thread another way
+        const channel = message.channel;
+        try {
+          const threads = await channel.threads.fetchActive();
+          const existingThread = threads.threads.find(thread =>
+            thread.parentId === channel.id &&
+            thread.ownerId === message.author.id
+          );
+
+          if (existingThread) {
+            console.log(`📝 Found and using existing thread: "${existingThread.name}"`);
+            return existingThread;
+          }
+        } catch (fetchError) {
+          console.error(`❌ Could not fetch existing thread:`, fetchError);
+        }
+
+        // Re-throw the original error if we can't find the thread
+        throw error;
+      }
+
+      // Re-throw any other errors
+      throw error;
+    }
   }
 
   /**

@@ -20,11 +20,23 @@ if tool_name != "Bash":
 blocked_patterns = [
     r"\bnpm\s+run\s+dev\b",
     r"\bnpm\s+start\b",
+    r"\bnpm\s+run\s+start\b",
     r"\byarn\s+dev\b",
     r"\byarn\s+start\b",
+    r"\bpnpm\s+run\s+dev\b",
+    r"\bpnpm\s+dev\b",
+    r"\bbun\s+run\s+dev\b",
+    r"\bbun\s+dev\b",
     r"\bbun\s+.*--watch\b",
     r"\bnpx\s+.*--watch\b",
+    r"\bnodemon\b",
+    r"\btsx\s+watch\b",
+    r"\bts-node-dev\b",
     r"\ndev\s*$",  # Just "dev" command
+    r"&&\s*npm\s+run\s+dev\b",  # Chained commands
+    r";\s*npm\s+run\s+dev\b",   # Sequential commands
+    r"\bnpm\s+run\s+dev\s*&",   # Background execution
+    r"\bnohup\s+npm\s+run\s+dev\b",  # Detached execution
 ]
 
 for pattern in blocked_patterns:

@@ -21,6 +21,7 @@ import { ComponentsResponseFormatter } from './lib/ComponentsResponseFormatter.j
 import { ErrorHandler } from './lib/ErrorHandler.js';
 import { ProgressReporter } from './lib/ProgressReporter.js';
 import ThreadNamer from './lib/ThreadNamer.js';
+import { PerformanceTracer } from './lib/PerformanceTracer.js';
 
 const client = new Client({
   intents: [
@@ -78,28 +79,57 @@ client.on('messageCreate', async (message) => {
 
   console.log(`📝 Processing message from ${message.author.tag}: ${message.content}`);
 
+  // Initialize performance tracing
+  const tracer = new PerformanceTracer();
+  tracer.addMetadata('userId', message.author.id)
+        .addMetadata('username', message.author.tag)
+        .addMetadata('messageLength', message.content.length)
+        .addMetadata('channelType', isInboxChannel ? 'inbox' : 'thread');
 
   let thread;
 
   try {
 
+    tracer.startPhase('thread_creation', {
+      isNewThread: isInboxChannel,
+      channelId: message.channel.id
+    });
+
     if (isInboxChannel) {
       // Create new thread immediately
       thread = await threadNamer.createThreadImmediate(message);
+      tracer.addMetadata('threadId', thread.id);
     } else {
       // Use existing thread for thread messages
       thread = message.channel;
+      tracer.addMetadata('threadId', thread.id);
     }
 
+    tracer.endPhase({ threadName: thread.name });
+
     // Start progress reporting with typing indicator
+    tracer.startPhase('progress_start');
     const progressReporter = new ProgressReporter(thread);
     await progressReporter.start();
+    tracer.endPhase();
 
     // Build conversation context
+    tracer.startPhase('conversation_context', {
+      threadId: thread.id
+    });
     const conversationPrompt = await threadManager.buildConversationPrompt(thread.id, message.content);
+    tracer.endPhase({
+      promptLength: conversationPrompt.length,
+      promptPreview: conversationPrompt.slice(0, 100) + '...'
+    });
 
     // Process with Claude Code SDK with retry logic
     console.log('🤖 Calling Claude with conversation context...');
+
+    tracer.startPhase('claude_sdk_call', {
+      promptLength: conversationPrompt.length,
+      vaultPath: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault'
+    });
 
     const claudeResult = await errorHandler.retryOperation(async () => {
       const stream = query({
@@ -112,6 +142,9 @@ client.on('messageCreate', async (message) => {
       let fullResponse = '';
       let usage = null;
       let duration = null;
+      let sessionId = null;
+      let toolCalls = [];
+      let streamStartTime = performance.now();
 
       for await (const msg of stream) {
         // Debug: log all message types to understand Claude stream
@@ -123,6 +156,7 @@ client.on('messageCreate', async (message) => {
         }
 
         if (msg.type === 'system') {
+          sessionId = msg.session_id;
           console.log(`📋 Claude session: ${msg.session_id}`);
         }
 
@@ -132,6 +166,11 @@ client.on('messageCreate', async (message) => {
             for (const contentBlock of msg.message.content) {
               if (contentBlock.type === 'tool_use') {
                 console.log(`🛠️ Tool call detected: ${contentBlock.name}`);
+                toolCalls.push({
+                  name: contentBlock.name,
+                  timestamp: performance.now(),
+                  input: contentBlock.input
+                });
                 await progressReporter.reportToolUse(contentBlock.name, contentBlock.input);
               }
               if (contentBlock.type === 'text') {
@@ -163,58 +202,124 @@ client.on('messageCreate', async (message) => {
         }
       }
 
-      return { fullResponse, usage, duration };
+      const streamDuration = performance.now() - streamStartTime;
+      return {
+        fullResponse,
+        usage,
+        duration,
+        sessionId,
+        toolCalls,
+        streamDuration
+      };
     }, {
       context: 'Claude processing',
       maxRetries: 3
     });
 
-    const { fullResponse, usage, duration } = claudeResult;
+    const { fullResponse, usage, duration, sessionId, toolCalls, streamDuration } = claudeResult;
+
+    tracer.endPhase({
+      responseLength: fullResponse.length,
+      toolCallCount: toolCalls.length,
+      sessionId: sessionId,
+      claudeDuration: duration,
+      streamDuration: streamDuration,
+      tokensUsed: usage?.total_tokens || 0
+    });
 
     // Stop progress reporting
+    tracer.startPhase('progress_stop');
     progressReporter.stop();
+    tracer.endPhase();
 
     // Prepare stats for Components v2
-    const toolCalls = progressReporter.toolCalls || [];
+    const progressToolCalls = progressReporter.toolCalls || [];
     const stats = {
       duration: duration,
       tokens: usage,
-      toolCount: toolCalls.length
+      toolCount: progressToolCalls.length
     };
 
     console.log('📊 Progress stats:', progressReporter.getStats());
 
     // Try Components v2 first, fallback to chunking if needed
-    if (componentsFormatter.shouldUseComponents(fullResponse, toolCalls)) {
+    tracer.startPhase('response_formatting', {
+      responseLength: fullResponse.length,
+      toolCallCount: progressToolCalls.length
+    });
+
+    if (componentsFormatter.shouldUseComponents(fullResponse, progressToolCalls)) {
       try {
-        const componentsMessage = await componentsFormatter.formatResponse(fullResponse, toolCalls);
+        const componentsMessage = await componentsFormatter.formatResponse(fullResponse, progressToolCalls);
+        tracer.endPhase({ formatType: 'components_v2' });
+
+        tracer.startPhase('discord_send');
         await thread.send(componentsMessage);
+        tracer.endPhase({ messageType: 'components' });
       } catch (error) {
         console.error('Components v2 failed, falling back to chunking:', error);
+        tracer.endPhase({ formatType: 'components_v2_failed', error: error.message });
+
         // Fallback to chunking
+        tracer.startPhase('response_formatting_fallback');
         await sendFallbackChunked(thread, fullResponse, usage, duration);
+        tracer.endPhase({ formatType: 'chunked_fallback' });
       }
     } else {
       // Use traditional chunking for simple responses
+      const chunks = responseFormatter.chunkResponse(fullResponse);
+      tracer.endPhase({
+        formatType: 'chunked',
+        chunkCount: chunks.length
+      });
+
+      tracer.startPhase('discord_send_chunked');
       await sendFallbackChunked(thread, fullResponse, usage, duration);
+      tracer.endPhase({
+        messageType: 'chunked',
+        chunkCount: chunks.length
+      });
     }
 
     // Store conversation history
+    tracer.startPhase('conversation_history');
     await threadManager.addMessage(thread.id, 'user', message.content);
     await threadManager.addMessage(thread.id, 'assistant', fullResponse);
+    tracer.endPhase();
 
     console.log('✅ Response sent to Discord');
     console.log(`📊 Thread stats:`, await threadManager.getStats());
 
     // Step 2: Smart thread renaming (sequential, after main processing)
     if (isInboxChannel) {
+      tracer.startPhase('thread_renaming');
       await threadNamer.renameThreadAfterProcessing(thread, message.content);
+      tracer.endPhase();
+    }
+
+    // Generate and log final performance report
+    const performanceReport = tracer.logReport();
+
+    // Add performance report to final console output
+    console.log(`\n🎯 Total Request Time: ${performanceReport.totalDurationFormatted} (${performanceReport.summary.efficiency})`);
+    if (performanceReport.summary.claudePercentage) {
+      console.log(`🤖 Claude Processing: ${performanceReport.summary.claudePercentage}% of total time`);
     }
 
   } catch (error) {
     // Stop progress reporting on error
     if (typeof progressReporter !== 'undefined') {
       progressReporter.stop();
+    }
+
+    // Log error performance report
+    if (typeof tracer !== 'undefined') {
+      tracer.addMetadata('error', true);
+      tracer.addMetadata('errorType', error.constructor.name);
+      tracer.addMetadata('errorMessage', error.message);
+
+      const errorReport = tracer.logReport();
+      console.log(`💥 Request failed after ${errorReport.totalDurationFormatted}`);
     }
 
     // Generate unique error ID for tracking
