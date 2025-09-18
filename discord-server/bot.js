@@ -15,11 +15,12 @@ import {
   MessageFlags
 } from 'discord.js';
 import { query } from '@anthropic-ai/claude-code';
-import { ThreadManager } from './lib/ThreadManager.js';
+import { RedisThreadManager } from './lib/RedisThreadManager.js';
 import { ResponseFormatter } from './lib/ResponseFormatter.js';
 import { ComponentsResponseFormatter } from './lib/ComponentsResponseFormatter.js';
 import { ErrorHandler } from './lib/ErrorHandler.js';
 import { ProgressReporter } from './lib/ProgressReporter.js';
+import ThreadNamer from './lib/ThreadNamer.js';
 
 const client = new Client({
   intents: [
@@ -29,15 +30,16 @@ const client = new Client({
   ]
 });
 
-// Initialize ThreadManager, ResponseFormatter and ErrorHandler
-const threadManager = new ThreadManager();
+// Initialize all components
+const threadManager = new RedisThreadManager();
 const responseFormatter = new ResponseFormatter();
 const componentsFormatter = new ComponentsResponseFormatter();
 const errorHandler = new ErrorHandler();
+const threadNamer = new ThreadNamer();
 
 // Cleanup old conversations every hour
-setInterval(() => {
-  threadManager.cleanup();
+setInterval(async () => {
+  await threadManager.cleanup();
 }, 60 * 60 * 1000);
 
 client.on('clientReady', () => {
@@ -58,63 +60,14 @@ client.on('messageCreate', async (message) => {
 
   console.log(`📝 Processing message from ${message.author.tag}: ${message.content}`);
 
-  // Complete Components v2 Style Guide
-  if (message.content.trim() === '!demo') {
-    try {
-      // 1. Pure TextDisplay (for main Claude responses)
-      const mainText = new TextDisplayBuilder()
-        .setContent('🎨 **Components v2 Style Guide**\n\nThis shows all available display components for our Discord bot:\n\n• **TextDisplay**: Clean messages like this one\n• **Section**: Structured content with accessories\n• **Container**: Grouped content (no accent for tools)\n• **Separator**: Clean spacing between sections');
-
-      // 2. Separator for spacing
-      const separator1 = new SeparatorBuilder()
-        .setSpacing(SeparatorSpacingSize.Small)
-        .setDivider(true);
-
-      // 3. Section with Button (for tool actions)
-      const toolSection = new SectionBuilder()
-        .addTextDisplayComponents(
-          textDisplay => textDisplay.setContent('🔧 **Tool Example**\n**Bash**: `ls -la discord-server/`\nList files in current directory')
-        )
-        .setButtonAccessory(
-          new ButtonBuilder()
-            .setCustomId('retry_tool')
-            .setLabel('Retry Tool')
-            .setStyle(ButtonStyle.Secondary)
-        );
-
-      // 4. Another separator
-      const separator2 = new SeparatorBuilder()
-        .setSpacing(SeparatorSpacingSize.Small)
-        .setDivider(false);
-
-      // 5. Container without accent (for stats/info)
-      const statsContainer = new ContainerBuilder()
-        .addTextDisplayComponents(
-          textDisplay => textDisplay.setContent('📊 **Performance Stats**\n⏱️ Duration: 2.3s\n🧠 Tokens: 245 → 187\n🔧 Tools: 2')
-        );
-
-      await message.reply({
-        components: [mainText, separator1, toolSection, separator2, statsContainer],
-        flags: MessageFlags.IsComponentsV2
-      });
-      return;
-    } catch (error) {
-      console.error('Components v2 style guide failed:', error);
-      await message.reply('❌ Components v2 demo failed - falling back to regular message');
-      return;
-    }
-  }
 
   let thread;
 
   try {
 
     if (isInboxChannel) {
-      // Create new thread for main channel messages
-      thread = await message.startThread({
-        name: `Processing: ${message.content.slice(0, 50)}...`,
-        autoArchiveDuration: 1440 // 24 hours
-      });
+      // Create new thread immediately
+      thread = await threadNamer.createThreadImmediate(message);
     } else {
       // Use existing thread for thread messages
       thread = message.channel;
@@ -125,7 +78,7 @@ client.on('messageCreate', async (message) => {
     await progressReporter.start();
 
     // Build conversation context
-    const conversationPrompt = threadManager.buildConversationPrompt(thread.id, message.content);
+    const conversationPrompt = await threadManager.buildConversationPrompt(thread.id, message.content);
 
     // Process with Claude Code SDK with retry logic
     console.log('🤖 Calling Claude with conversation context...');
@@ -229,11 +182,16 @@ client.on('messageCreate', async (message) => {
     }
 
     // Store conversation history
-    threadManager.addMessage(thread.id, 'user', message.content);
-    threadManager.addMessage(thread.id, 'assistant', fullResponse);
+    await threadManager.addMessage(thread.id, 'user', message.content);
+    await threadManager.addMessage(thread.id, 'assistant', fullResponse);
 
     console.log('✅ Response sent to Discord');
-    console.log(`📊 Thread stats:`, threadManager.getStats());
+    console.log(`📊 Thread stats:`, await threadManager.getStats());
+
+    // Step 2: Smart thread renaming (sequential, after main processing)
+    if (isInboxChannel) {
+      await threadNamer.renameThreadAfterProcessing(thread, message.content);
+    }
 
   } catch (error) {
     // Stop progress reporting on error
