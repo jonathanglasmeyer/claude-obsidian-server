@@ -153,12 +153,6 @@ class ClaudeSessionPool {
     }
   }
 
-  // This method is no longer used - session ID is extracted during stream processing
-  // to avoid consuming the stream and losing context
-  async extractSessionId(session) {
-    console.warn('⚠️  extractSessionId() should not be called - use updateSessionId() instead');
-    return null;
-  }
 
   // Set the session ID after it's extracted from stream processing
   async updateSessionId(threadId, sessionId) {
