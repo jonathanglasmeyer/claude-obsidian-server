@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+import express from 'express';
+
 // File logging only for local development
 // Production uses Docker logs (docker compose logs -f)
 
@@ -42,6 +44,10 @@ const responseFormatter = new ResponseFormatter();
 const componentsFormatter = new ComponentsResponseFormatter();
 const errorHandler = new ErrorHandler();
 const threadNamer = new ThreadNamer();
+
+// HTTP Server for health checks and management endpoints
+const app = express();
+app.use(express.json());
 
 client.on('clientReady', async () => {
   console.log(`🤖 Bot logged in as ${client.user.tag}`);
@@ -415,6 +421,88 @@ async function sendFallbackChunked(thread, fullResponse, usage, duration) {
     );
   }
 }
+
+// HTTP Endpoints
+app.get('/health', async (req, res) => {
+  const health = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    discord: {
+      connected: client.isReady(),
+      user: client.user?.tag || null,
+      guilds: client.guilds.cache.size,
+      channels: client.channels.cache.size
+    },
+    redis: {
+      connected: !!threadManager?.client?.isReady
+    },
+    threads: threadManager ? (await threadManager.getStats()).activeThreads : 0,
+    sessions: sessionPool ? sessionPool.getPoolStats() : null
+  };
+
+  res.json(health);
+});
+
+app.post('/admin/cleanup-threads', async (req, res) => {
+  try {
+    if (!threadManager) {
+      return res.status(503).json({ error: 'ThreadManager not initialized' });
+    }
+
+    console.log('🧹 Manual thread cleanup requested via API');
+
+    const inboxChannel = client.channels.cache.get(process.env.DISCORD_INBOX_CHANNEL_ID);
+    if (!inboxChannel) {
+      return res.status(404).json({ error: 'Inbox channel not found' });
+    }
+
+    // Get all threads in the inbox channel
+    const threads = await inboxChannel.threads.fetchActive();
+    const archivedThreads = await inboxChannel.threads.fetchArchived();
+
+    const allThreads = [...threads.threads.values(), ...archivedThreads.threads.values()];
+    const deletedThreads = [];
+
+    console.log(`🔍 Found ${allThreads.length} total threads to evaluate`);
+
+    for (const thread of allThreads) {
+      try {
+        console.log(`🗑️ Deleting thread: ${thread.name} (${thread.id})`);
+        await thread.delete('Manual cleanup via API');
+        deletedThreads.push({ id: thread.id, name: thread.name });
+
+        // Clean up session data
+        if (sessionPool) {
+          await sessionPool.cleanupSession(thread.id);
+        }
+
+        // Small delay to avoid rate limits
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        console.error(`❌ Failed to delete thread ${thread.id}:`, error.message);
+      }
+    }
+
+    console.log(`✅ Thread cleanup completed: ${deletedThreads.length} threads deleted`);
+
+    res.json({
+      success: true,
+      deleted: deletedThreads.length,
+      threads: deletedThreads
+    });
+
+  } catch (error) {
+    console.error('❌ Thread cleanup failed:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Start HTTP server
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`🏥 Health server listening on port ${PORT}`);
+});
 
 // Login
 // Graceful shutdown handling
