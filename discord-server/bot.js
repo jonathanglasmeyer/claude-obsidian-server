@@ -1,6 +1,10 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+import fs from 'fs';
+// Clear log file on startup for clean restart logs
+fs.writeFileSync('./bot.log', '');
+
 import {
   Client,
   GatewayIntentBits,
@@ -22,6 +26,7 @@ import { ErrorHandler } from './lib/ErrorHandler.js';
 import { ProgressReporter } from './lib/ProgressReporter.js';
 import ThreadNamer from './lib/ThreadNamer.js';
 import { PerformanceTracer } from './lib/PerformanceTracer.js';
+import ClaudeSessionPool from './lib/ClaudeSessionPool.js';
 
 const client = new Client({
   intents: [
@@ -33,6 +38,7 @@ const client = new Client({
 
 // Initialize all components (threadManager will get Discord client after ready)
 let threadManager;
+let sessionPool;
 const responseFormatter = new ResponseFormatter();
 const componentsFormatter = new ComponentsResponseFormatter();
 const errorHandler = new ErrorHandler();
@@ -53,7 +59,12 @@ client.on('clientReady', async () => {
     // Start fallback cleanup scheduler (includes startup cleanup)
     await threadManager.startFallbackCleanup();
 
-    console.log('✅ Bot initialization complete');
+    console.log('🚀 Initializing Claude Session Pool...');
+
+    // Initialize session pool with the same Redis client as thread manager
+    sessionPool = new ClaudeSessionPool(threadManager.client);
+
+    console.log('✅ Bot initialization complete with session pooling');
 
   } catch (error) {
     console.error('❌ Bot initialization failed:', error);
@@ -64,9 +75,9 @@ client.on('messageCreate', async (message) => {
   // Skip bots
   if (message.author.bot) return;
 
-  // Wait for thread manager to be initialized
-  if (!threadManager) {
-    console.log('⏳ ThreadManager not yet initialized, skipping message');
+  // Wait for components to be initialized
+  if (!threadManager || !sessionPool) {
+    console.log('⏳ Components not yet initialized, skipping message');
     return;
   }
 
@@ -114,10 +125,8 @@ client.on('messageCreate', async (message) => {
     tracer.endPhase();
 
     // Build conversation context
-    tracer.startPhase('conversation_context', {
-      threadId: thread.id
-    });
-    const conversationPrompt = await threadManager.buildConversationPrompt(thread.id, message.content);
+    // Skip conversation context building - sessions handle context
+    const conversationPrompt = message.content;
     tracer.endPhase({
       promptLength: conversationPrompt.length,
       promptPreview: conversationPrompt.slice(0, 100) + '...'
@@ -132,12 +141,8 @@ client.on('messageCreate', async (message) => {
     });
 
     const claudeResult = await errorHandler.retryOperation(async () => {
-      const stream = query({
-        prompt: conversationPrompt,
-        options: {
-          cwd: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault'
-        }
-      });
+      // Use session pool instead of direct query
+      const stream = await sessionPool.processMessage(thread.id, conversationPrompt);
 
       let fullResponse = '';
       let usage = null;
@@ -283,12 +288,10 @@ client.on('messageCreate', async (message) => {
 
     // Store conversation history
     tracer.startPhase('conversation_history');
-    await threadManager.addMessage(thread.id, 'user', message.content);
-    await threadManager.addMessage(thread.id, 'assistant', fullResponse);
+    // Session handles conversation context - no need to track messages separately
     tracer.endPhase();
 
     console.log('✅ Response sent to Discord');
-    console.log(`📊 Thread stats:`, await threadManager.getStats());
 
     // Step 2: Smart thread renaming (sequential, after main processing)
     if (isInboxChannel) {
@@ -389,4 +392,33 @@ async function sendFallbackChunked(thread, fullResponse, usage, duration) {
 }
 
 // Login
+// Graceful shutdown handling
+process.on('SIGINT', async () => {
+  console.log('\n🛑 Received SIGINT, shutting down gracefully...');
+
+  if (sessionPool) {
+    await sessionPool.shutdown();
+  }
+
+  if (client) {
+    await client.destroy();
+  }
+
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 Received SIGTERM, shutting down gracefully...');
+
+  if (sessionPool) {
+    await sessionPool.shutdown();
+  }
+
+  if (client) {
+    await client.destroy();
+  }
+
+  process.exit(0);
+});
+
 client.login(process.env.DISCORD_BOT_TOKEN);
