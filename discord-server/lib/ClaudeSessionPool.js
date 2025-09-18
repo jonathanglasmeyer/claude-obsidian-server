@@ -76,7 +76,8 @@ class ClaudeSessionPool {
         prompt: initialPrompt || "Start new Discord conversation",
         options: {
           cwd: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault',
-          maxTurns: 100
+          maxTurns: 100,
+          permissionMode: 'bypassPermissions' // Set bypass permissions for Discord bot
         }
       });
 
@@ -117,7 +118,8 @@ class ClaudeSessionPool {
           prompt: prompt,
           options: {
             continue: true,
-            cwd: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault'
+            cwd: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault',
+            permissionMode: 'bypassPermissions' // Set bypass permissions for Discord bot
           }
         });
         return continueSession;
