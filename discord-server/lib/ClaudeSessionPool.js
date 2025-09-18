@@ -81,8 +81,9 @@ class ClaudeSessionPool {
         }
       });
 
-      // Extract session ID from first system message
-      const sessionId = await this.extractSessionId(session);
+      // Session ID will be extracted during stream processing in bot.js
+      // Don't consume the stream here to preserve session context
+      const sessionId = null; // Will be set by bot.js after processing
 
       // Cache the new session
       this.sessionCache.set(threadId, session);
@@ -93,12 +94,8 @@ class ClaudeSessionPool {
         created: Date.now()
       });
 
-      // Persist session mapping to Redis (using redis package API)
-      await this.redis.setEx(
-        `claude_session:${threadId}`,
-        this.maxIdleTime / 1000, // TTL in seconds
-        sessionId
-      );
+      // Session ID will be persisted after stream processing in bot.js
+      // Don't persist here since we don't have the actual session ID yet
 
       return session;
 
@@ -113,15 +110,30 @@ class ClaudeSessionPool {
       // Check if this is a cached session (existing conversation)
       if (this.sessionCache.has(threadId)) {
         console.log(`🔄 Continuing existing session for thread ${threadId}`);
-        // Continue existing session with new message
+
+        // Get session metadata to resume with specific session ID
+        const metadata = this.sessionMetadata.get(threadId);
+        if (!metadata?.sessionId) {
+          console.warn(`⚠️  No session ID found for thread ${threadId}, creating new session`);
+          await this.cleanupSession(threadId);
+          return await this.getOrCreateSession(threadId, prompt);
+        }
+
+        // Resume specific session by ID with detailed logging
+        console.log(`🔄 Resuming session ${metadata.sessionId} for thread ${threadId}`);
         const continueSession = query({
           prompt: prompt,
           options: {
-            continue: true,
+            resume: metadata.sessionId,
             cwd: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault',
-            permissionMode: 'bypassPermissions' // Set bypass permissions for Discord bot
+            permissionMode: 'bypassPermissions'
           }
         });
+
+        // Update metadata
+        metadata.lastUsed = Date.now();
+        metadata.messageCount++;
+
         return continueSession;
       }
 
@@ -141,21 +153,34 @@ class ClaudeSessionPool {
     }
   }
 
+  // This method is no longer used - session ID is extracted during stream processing
+  // to avoid consuming the stream and losing context
   async extractSessionId(session) {
-    try {
-      // Peek at the first message to get session ID
-      const iterator = session[Symbol.asyncIterator]();
-      const firstMessage = await iterator.next();
+    console.warn('⚠️  extractSessionId() should not be called - use updateSessionId() instead');
+    return null;
+  }
 
-      if (firstMessage.value && firstMessage.value.type === 'system') {
-        return firstMessage.value.session_id;
+  // Set the session ID after it's extracted from stream processing
+  async updateSessionId(threadId, sessionId) {
+    try {
+      console.log(`💾 Updating session ID for thread ${threadId}: ${sessionId}`);
+
+      // Update metadata
+      const metadata = this.sessionMetadata.get(threadId);
+      if (metadata) {
+        metadata.sessionId = sessionId;
       }
 
-      // Fallback: generate a session ID if not found
-      return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Persist session mapping to Redis
+      await this.redis.setEx(
+        `claude_session:${threadId}`,
+        this.maxIdleTime / 1000, // TTL in seconds
+        sessionId
+      );
+
+      console.log(`✅ Session ID persisted to Redis for thread ${threadId}`);
     } catch (error) {
-      console.warn('⚠️  Could not extract session ID:', error.message);
-      return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.error(`❌ Failed to update session ID for thread ${threadId}:`, error);
     }
   }
 

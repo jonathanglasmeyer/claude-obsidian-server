@@ -150,6 +150,9 @@ client.on('messageCreate', async (message) => {
       let toolCalls = [];
       let streamStartTime = performance.now();
 
+      // Tool deduplication for display (not execution)
+      const reportedTools = new Set();
+
       for await (const msg of stream) {
         // Debug: log all message types to understand Claude stream
         console.log(`🔍 Claude stream message type: ${msg.type}`, Object.keys(msg));
@@ -169,7 +172,25 @@ client.on('messageCreate', async (message) => {
           if (msg.message && msg.message.content) {
             for (const contentBlock of msg.message.content) {
               if (contentBlock.type === 'tool_use') {
-                console.log(`🛠️ Tool call detected: ${contentBlock.name}`);
+                // Debug: Log available IDs in contentBlock
+                console.log(`🔍 Tool block IDs:`, {
+                  id: contentBlock.id,
+                  tool_use_id: contentBlock.tool_use_id,
+                  parent_tool_use_id: msg.parent_tool_use_id,
+                  uuid: msg.uuid,
+                  keys: Object.keys(contentBlock)
+                });
+
+                // Use tool_use_id if available, fallback to content hash
+                const toolId = contentBlock.id || contentBlock.tool_use_id || `${contentBlock.name}-${JSON.stringify(contentBlock.input)}`;
+
+                if (reportedTools.has(toolId)) {
+                  console.log(`⚠️ Skipping duplicate tool display: ${contentBlock.name} (ID: ${toolId})`);
+                  continue;
+                }
+
+                reportedTools.add(toolId);
+                console.log(`🛠️ Tool call detected: ${contentBlock.name} (ID: ${toolId})`);
                 toolCalls.push({
                   name: contentBlock.name,
                   timestamp: performance.now(),
@@ -221,6 +242,11 @@ client.on('messageCreate', async (message) => {
     });
 
     const { fullResponse, usage, duration, sessionId, toolCalls, streamDuration } = claudeResult;
+
+    // Update session ID in session pool if we got one
+    if (sessionId) {
+      await sessionPool.updateSessionId(thread.id, sessionId);
+    }
 
     tracer.endPhase({
       responseLength: fullResponse.length,
