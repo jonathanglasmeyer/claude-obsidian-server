@@ -1,9 +1,8 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import fs from 'fs';
-// Clear log file on startup for clean restart logs
-fs.writeFileSync('./bot.log', '');
+// File logging only for local development
+// Production uses Docker logs (docker compose logs -f)
 
 import {
   Client,
