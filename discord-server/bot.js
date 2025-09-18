@@ -30,26 +30,44 @@ const client = new Client({
   ]
 });
 
-// Initialize all components
-const threadManager = new RedisThreadManager();
+// Initialize all components (threadManager will get Discord client after ready)
+let threadManager;
 const responseFormatter = new ResponseFormatter();
 const componentsFormatter = new ComponentsResponseFormatter();
 const errorHandler = new ErrorHandler();
 const threadNamer = new ThreadNamer();
 
-// Cleanup old conversations every hour
-setInterval(async () => {
-  await threadManager.cleanup();
-}, 60 * 60 * 1000);
-
-client.on('clientReady', () => {
+client.on('clientReady', async () => {
   console.log(`🤖 Bot logged in as ${client.user.tag}`);
   console.log(`📥 Monitoring channel: ${process.env.DISCORD_INBOX_CHANNEL_ID}`);
+
+  try {
+    console.log('🔄 Initializing ThreadManager...');
+
+    // Initialize thread manager with Discord client for archiving
+    threadManager = new RedisThreadManager(client);
+
+    console.log('🔄 Starting fallback cleanup...');
+
+    // Start fallback cleanup scheduler (includes startup cleanup)
+    await threadManager.startFallbackCleanup();
+
+    console.log('✅ Bot initialization complete');
+
+  } catch (error) {
+    console.error('❌ Bot initialization failed:', error);
+  }
 });
 
 client.on('messageCreate', async (message) => {
   // Skip bots
   if (message.author.bot) return;
+
+  // Wait for thread manager to be initialized
+  if (!threadManager) {
+    console.log('⏳ ThreadManager not yet initialized, skipping message');
+    return;
+  }
 
   // Process messages in inbox channel OR threads created from inbox channel
   const isInboxChannel = message.channel.id === process.env.DISCORD_INBOX_CHANNEL_ID;

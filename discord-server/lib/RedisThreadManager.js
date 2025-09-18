@@ -6,8 +6,10 @@
 import { createClient } from 'redis';
 
 export class RedisThreadManager {
-  constructor() {
+  constructor(discordClient = null) {
     this.client = null;
+    this.subscriberClient = null; // Separate client for keyspace events
+    this.discordClient = discordClient;
     this.isConnected = false;
     this.maxMessages = 50;
     this.ttlSeconds = 172800; // 2 days in seconds
@@ -52,10 +54,92 @@ export class RedisThreadManager {
       await this.client.connect();
       console.log('🗄️ RedisThreadManager initialized with Redis');
 
+      // Initialize keyspace events for thread archiving
+      await this.initializeKeyspaceEvents();
+
+      // Run startup cleanup after everything is initialized
+      if (this.discordClient) {
+        console.log('🔄 Running immediate startup cleanup...');
+        await this.performStartupCleanup();
+      }
+
     } catch (error) {
       console.log('❌ Redis not available, using in-memory fallback storage');
       this.isConnected = false;
       this.client = null;
+    }
+  }
+
+  /**
+   * Initialize Redis keyspace events for automatic thread archiving
+   */
+  async initializeKeyspaceEvents() {
+    if (!this.isConnected || !this.discordClient) {
+      return;
+    }
+
+    try {
+      // Enable keyspace events for expired keys
+      await this.client.configSet('notify-keyspace-events', 'Ex');
+
+      // Create separate subscriber client (Redis requirement)
+      this.subscriberClient = createClient({
+        url: process.env.REDIS_URL || 'redis://localhost:6379'
+      });
+
+      await this.subscriberClient.connect();
+
+      // Subscribe to expired key events
+      await this.subscriberClient.subscribe('__keyevent@0__:expired', (expiredKey) => {
+        this.handleKeyExpiry(expiredKey);
+      });
+
+      console.log('📡 Redis keyspace events initialized for thread archiving');
+
+    } catch (error) {
+      console.error('⚠️ Failed to initialize keyspace events:', error.message);
+    }
+  }
+
+  /**
+   * Handle Redis key expiry events for thread archiving
+   */
+  async handleKeyExpiry(expiredKey) {
+    // Only handle lastAccess key expiries (these expire with the conversation)
+    if (!expiredKey.includes(':lastAccess')) {
+      return;
+    }
+
+    try {
+      // Extract thread ID from expired key: thread:1234567890:lastAccess
+      const threadId = expiredKey.split(':')[1];
+
+      if (threadId && this.discordClient) {
+        await this.deleteDiscordThread(threadId);
+      }
+
+    } catch (error) {
+      console.error('⚠️ Error handling key expiry:', error.message);
+    }
+  }
+
+  /**
+   * Delete a Discord thread when conversation expires
+   */
+  async deleteDiscordThread(threadId) {
+    try {
+      const thread = await this.discordClient.channels.fetch(threadId);
+
+      if (thread && thread.isThread()) {
+        await thread.delete('Auto-deleted after 48h inactivity');
+        console.log(`🗑️ Thread ${threadId} auto-deleted after 48h inactivity`);
+      }
+
+    } catch (error) {
+      // Thread might already be deleted or inaccessible
+      if (!error.message.includes('Unknown Channel')) {
+        console.error(`❌ Failed to delete thread ${threadId}:`, error.message);
+      }
     }
   }
 
@@ -251,6 +335,12 @@ export class RedisThreadManager {
       if (now - lastAccess > maxAge) {
         this.fallbackConversations.delete(threadId);
         this.fallbackLastAccess.delete(threadId);
+
+        // Delete Discord thread in fallback mode too
+        if (this.discordClient) {
+          this.deleteDiscordThread(threadId);
+        }
+
         removed++;
       }
     }
@@ -258,6 +348,96 @@ export class RedisThreadManager {
     if (removed > 0) {
       console.log(`🧹 Cleaned up ${removed} old threads from fallback storage`);
     }
+  }
+
+  /**
+   * Startup cleanup for orphaned threads and expired data
+   */
+  async performStartupCleanup() {
+    if (!this.isConnected || !this.discordClient) {
+      return;
+    }
+
+    try {
+      // Get all active Discord threads from the inbox channel
+      const inboxChannel = await this.discordClient.channels.fetch(process.env.DISCORD_INBOX_CHANNEL_ID);
+      const threads = await inboxChannel.threads.fetchActive();
+
+      // Only check active threads (archived threads can't be managed anymore)
+      const activeThreads = threads.threads;
+
+      console.log(`🧹 Starting startup cleanup: checking ${activeThreads.size} active Discord threads...`);
+
+      let deletedCount = 0;
+      let cleanedCount = 0;
+
+      for (const [threadId, thread] of activeThreads) {
+
+        // Get last message in thread to determine real activity
+        const messages = await thread.messages.fetch({ limit: 1 });
+        const lastMessage = messages.first();
+
+        if (!lastMessage) {
+          // No messages in thread, use creation time
+          const threadAge = Date.now() - thread.createdTimestamp;
+          var lastActivityAge = threadAge;
+        } else {
+          // Use last message timestamp
+          var lastActivityAge = Date.now() - lastMessage.createdTimestamp;
+        }
+
+        const maxAge = this.ttlSeconds * 1000; // 48 hours in milliseconds
+
+        // Check if we have Redis data for this thread
+        const lastAccessKey = `thread:${threadId}:lastAccess`;
+        const ttl = await this.client.ttl(lastAccessKey);
+
+        // Delete if: (Last activity older than 48h) OR (Has Redis data with low TTL)
+        const shouldDelete = (lastActivityAge > maxAge) || (ttl > 0 && ttl < 3600);
+
+        if (shouldDelete) {
+          try {
+            await this.deleteDiscordThread(threadId);
+            deletedCount++;
+
+            // Clean up Redis data for expired threads
+            if (ttl === -2) {
+              await this.client.del(lastAccessKey);
+              await this.client.del(`thread:${threadId}:messages`);
+              cleanedCount++;
+            }
+          } catch (error) {
+            console.error(`⚠️ Failed to archive thread ${threadId}:`, error.message);
+          }
+        }
+      }
+
+      if (deletedCount > 0 || cleanedCount > 0) {
+        console.log(`🧹 Startup cleanup: ${deletedCount} threads deleted, ${cleanedCount} Redis entries cleaned`);
+      } else {
+        console.log(`🧹 Startup cleanup completed: ${activeThreads.size} threads checked, all healthy (< 48h old)`);
+      }
+
+    } catch (error) {
+      console.error('⚠️ Startup cleanup failed:', error.message);
+    }
+  }
+
+  /**
+   * Daily cleanup for missed events (fallback for event-driven archiving)
+   */
+  async startFallbackCleanup() {
+    // Startup cleanup already ran during initialization
+
+    // Run cleanup daily at 3 AM
+    const runCleanup = () => {
+      this.cleanup();
+      setTimeout(runCleanup, 24 * 60 * 60 * 1000); // 24 hours
+    };
+
+    // Start first cleanup in 1 hour, then every 24h
+    setTimeout(runCleanup, 60 * 60 * 1000);
+    console.log('🕒 Daily fallback cleanup scheduled');
   }
 
   getFallbackStats() {
@@ -280,6 +460,11 @@ export class RedisThreadManager {
    * Graceful shutdown
    */
   async disconnect() {
+    if (this.subscriberClient) {
+      await this.subscriberClient.disconnect();
+      console.log('🔌 Redis subscriber disconnected');
+    }
+
     if (this.client && this.isConnected) {
       await this.client.disconnect();
       console.log('🔌 Redis disconnected');
