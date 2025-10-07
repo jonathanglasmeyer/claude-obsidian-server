@@ -1,4 +1,6 @@
-# Claude Obsidian Server
+# Claude <> Obsidian Discord Bot
+
+![Claude Code](https://img.shields.io/badge/Claude_Code-Anthropic-6366f1?style=for-the-badge) ![Obsidian](https://img.shields.io/badge/Obsidian-%23483699.svg?style=for-the-badge&logo=obsidian&logoColor=white) ![Claude Agent SDK](https://img.shields.io/badge/Claude_Agent_SDK-0.1.9-blue?style=for-the-badge)
 
 Mobile access to Claude Code within your Obsidian vault. Built using the [Claude Agent SDK](https://docs.claude.com/en/api/agent-sdk/overview).
 
@@ -10,7 +12,7 @@ Chat with your vault and ingest content from anywhere via Discord. On desktop, u
 
 - Thread-based conversations with full history
 - Smart thread naming based on conversation content
-- Redis persistence with 24-hour TTL
+- Redis persistence with 48-hour TTL
 - Automatic cleanup of inactive threads
 - Docker deployment with health monitoring
 - Automated CI/CD via GitHub Actions
