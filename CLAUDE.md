@@ -21,10 +21,10 @@ A Discord bot that provides mobile access to Claude Code within your Obsidian va
 ## Architecture
 
 ### Core Components
-- **Discord Bot**: Claude Code SDK + Thread Management
-- **Redis**: Session persistence with 24h TTL
-- **Docker**: Multi-container setup (bot + redis)
-- **Vault**: Claude Code CLI operates in actual Obsidian vault directory
+- **Discord Bot**: Node.js service that listens to Discord messages and forwards them to Claude Agent SDK
+- **Claude Agent SDK**: Executes Claude Code queries with access to your Obsidian vault filesystem
+- **Redis**: Stores conversation threads and session state (24h TTL, survives bot restarts)
+- **Obsidian Vault**: Your vault directory is mounted into the container, accessible to Claude Code
 
 ### Security
 - **Environment Variables**: Secrets stored in `discord-server/.env` (gitignored)
