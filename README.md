@@ -50,7 +50,7 @@ Chat with your vault and ingest content from anywhere via Discord. On desktop, u
 
 ## Production Deployment
 
-**Note**: The included deployment scripts target a Hetzner VPS setup with specific infrastructure assumptions (Caddy reverse proxy, Docker network configuration). For other hosting providers, use the Docker Compose setup as a starting point and adapt the deployment workflow to your environment.
+**Note**: The included deployment scripts deploy only the bot containers. Reverse proxy setup (Caddy, nginx, etc.) and SSL certificates are not covered. The bot exposes port 3001 for health checks - configure your reverse proxy accordingly if you want external access.
 
 ### Automated (Reference Implementation)
 
