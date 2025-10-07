@@ -22,7 +22,7 @@ Chat with your vault and ingest content from anywhere via Discord. On desktop, u
 - Node.js 18+
 - Docker and Docker Compose
 - Discord Bot Token ([setup guide](discord-server/DISCORD-SETUP.md))
-- Claude Code OAuth Token
+- Claude Code OAuth Token ([setup guide](CLAUDE-CODE-SETUP.md))
 - Obsidian Vault
 
 ### Local Development
@@ -85,7 +85,8 @@ npm run health     # Health check
 
 ## Documentation
 
-- [DISCORD-SETUP.md](discord-server/DISCORD-SETUP.md) - Discord configuration
+- [DISCORD-SETUP.md](discord-server/DISCORD-SETUP.md) - Discord bot configuration
+- [CLAUDE-CODE-SETUP.md](CLAUDE-CODE-SETUP.md) - Claude Code authentication
 - [CLAUDE.md](CLAUDE.md) - Comprehensive docs
 - [docs/architecture/](docs/architecture/) - Technical details
 
