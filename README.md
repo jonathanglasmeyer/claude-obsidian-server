@@ -50,7 +50,7 @@ Chat with your vault and ingest content from anywhere via Discord. On desktop, u
 
 ## Production Deployment
 
-**Note**: The included deployment scripts deploy only the bot containers. Reverse proxy setup (Caddy, nginx, etc.) and SSL certificates are not covered. The bot exposes port 3001 for health checks - configure your reverse proxy accordingly if you want external access.
+**Note**: The bot connects to Discord via WebSocket - no public HTTP access required. The deployment scripts handle only the bot containers. Port 3001 exposes a health check endpoint for monitoring (optional). Reverse proxy setup (Caddy, nginx, etc.) is not needed unless you want external access to health checks.
 
 ### Automated (Reference Implementation)
 
