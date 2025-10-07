@@ -444,6 +444,56 @@ app.get('/health', async (req, res) => {
   res.json(health);
 });
 
+// Claude SDK health check - pings Claude Agent SDK with simple query
+app.get('/health/claude', async (req, res) => {
+  try {
+    console.log('🏥 Claude SDK health check requested');
+
+    const stream = query({
+      prompt: 'What is 2+3? Reply with only the number.',
+      options: {
+        cwd: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault',
+        model: 'claude-sonnet-4-5-20250929',
+        systemPrompt: { type: 'preset', preset: 'claude_code' }
+      }
+    });
+
+    let response = '';
+    let sessionId = null;
+    const startTime = Date.now();
+
+    for await (const event of stream) {
+      if (event.type === 'system' && event.session_id) {
+        sessionId = event.session_id;
+      }
+      if (event.type === 'result') {
+        response = event.result;
+        break;
+      }
+    }
+
+    const duration = Date.now() - startTime;
+
+    res.json({
+      status: 'healthy',
+      sdk: '@anthropic-ai/claude-agent-sdk',
+      version: '0.1.9',
+      sessionId,
+      response: response.slice(0, 200),
+      durationMs: duration,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Claude SDK health check failed:', error);
+    res.status(500).json({
+      status: 'unhealthy',
+      sdk: '@anthropic-ai/claude-agent-sdk',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 app.post('/admin/cleanup-threads', async (req, res) => {
   try {
     if (!threadManager) {

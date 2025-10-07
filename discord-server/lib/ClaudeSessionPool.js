@@ -44,7 +44,10 @@ class ClaudeSessionPool {
             prompt: initialPrompt || "Continue our conversation",
             options: {
               resume: persistedSessionId,
-              cwd: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault'
+              cwd: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault',
+              model: 'claude-sonnet-4-5-20250929',
+              systemPrompt: { type: 'preset', preset: 'claude_code' },
+              settingSources: ['user', 'project', 'local']
             }
           });
 
@@ -77,7 +80,10 @@ class ClaudeSessionPool {
         options: {
           cwd: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault',
           maxTurns: 100,
-          permissionMode: 'bypassPermissions' // Set bypass permissions for Discord bot
+          permissionMode: 'bypassPermissions', // Set bypass permissions for Discord bot
+          model: 'claude-sonnet-4-5-20250929',
+          systemPrompt: { type: 'preset', preset: 'claude_code' },
+          settingSources: ['user', 'project', 'local']
         }
       });
 
@@ -126,7 +132,10 @@ class ClaudeSessionPool {
           options: {
             resume: metadata.sessionId,
             cwd: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault',
-            permissionMode: 'bypassPermissions'
+            permissionMode: 'bypassPermissions',
+            model: 'claude-sonnet-4-5-20250929',
+            systemPrompt: { type: 'preset', preset: 'claude_code' },
+            settingSources: ['user', 'project', 'local']
           }
         });
 
