@@ -4,6 +4,8 @@ Mobile access to Claude Code within your Obsidian vault. Built using the [Claude
 
 Chat with your vault and ingest content from anywhere via Discord. On desktop, use Claude Code directly. On mobile, use this.
 
+**Security Note**: Deploy this on a private Discord server that only you control. The bot has full access to your Obsidian vault.
+
 ## Features
 
 - Thread-based conversations with full history

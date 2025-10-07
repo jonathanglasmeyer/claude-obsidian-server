@@ -12,6 +12,8 @@ A Discord bot that provides mobile access to Claude Code within your Obsidian va
 
 **Why**: On desktop, you have Claude Code directly. On mobile, use Discord as your interface to chat with your vault and ingest content via Claude Code from anywhere.
 
+**Security**: This is designed for personal use on a private Discord server. The bot has full filesystem access to your vault.
+
 ## Current Status
 - **Reference Implementation**: Production-ready codebase with working deployment pipeline
 - **Self-hosted**: Designed for personal deployment on your own infrastructure
