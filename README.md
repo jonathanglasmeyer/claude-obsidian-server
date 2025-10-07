@@ -1,8 +1,8 @@
 # Discord Obsidian Bot
 
-Turn your Discord channel into a direct interface to Claude Code, operating within your Obsidian vault. Built using the [Claude Agent SDK](https://docs.claude.com/en/api/agent-sdk/overview).
+Mobile access to Claude Code within your Obsidian vault. Built using the [Claude Agent SDK](https://docs.claude.com/en/api/agent-sdk/overview).
 
-Share content in Discord, get intelligent note creation in your vault with full conversation context.
+Chat with your vault and ingest content from anywhere via Discord. On desktop, use Claude Code directly. On mobile, use this.
 
 ## Features
 

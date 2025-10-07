@@ -2,15 +2,15 @@
 
 ## Project Overview
 
-A Discord bot that turns your Discord channel into a direct interface to Claude Code, operating within your Obsidian vault context. Built using the [Claude Agent SDK](https://docs.claude.com/en/api/agent-sdk/overview).
+A Discord bot that provides mobile access to Claude Code within your Obsidian vault context. Built using the [Claude Agent SDK](https://docs.claude.com/en/api/agent-sdk/overview).
 
 **User Flow**:
 1. Share content in Discord (text, links, ideas)
 2. Bot creates a dedicated thread for your conversation
-3. Claude Code processes your request with full access to your vault
+3. Claude Code processes your request with full vault access
 4. Results are saved directly to your Obsidian notes
 
-**Value**: Skip the context-switching between Discord, Claude, and Obsidian. Your Discord messages become intelligent note creation commands with persistent conversation history.
+**Why**: On desktop, you have Claude Code directly. On mobile, use Discord as your interface to chat with your vault and ingest content via Claude Code from anywhere.
 
 ## Current Status
 - **Reference Implementation**: Production-ready codebase with working deployment pipeline
