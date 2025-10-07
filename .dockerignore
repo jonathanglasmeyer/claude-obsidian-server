@@ -1,42 +1,5 @@
 # === DOCKER IGNORE FILE ===
 # Prevents build artifacts and temporary files from being sent to Docker context
-# This dramatically reduces transfer time and image size
-
-# === ANDROID BUILD ARTIFACTS ===
-# CMake and native build artifacts - these are MASSIVE
-**/.cxx/
-**/.cmake/
-**/CMakeCache.txt
-**/CMakeFiles/
-**/cmake_install.cmake
-**/build.ninja
-**/*.ninja_deps
-**/*.ninja_log
-
-# Gradle build system
-**/.gradle/
-**/build/
-**/app/build/
-**/android/app/build/
-
-# Android native libraries and outputs  
-**/libs/
-**/obj/
-**/jniLibs/
-**/*.so
-**/*.a
-**/*.o
-
-# === REACT NATIVE ARTIFACTS ===
-# Metro bundler
-metro-logs.txt
-metro.config.js.bak
-**/.metro/
-
-# React Native build outputs
-**/android/app/src/main/assets/
-**/ios/build/
-**/ios/DerivedData/
 
 # === NODE.JS & NPM ===
 node_modules/
