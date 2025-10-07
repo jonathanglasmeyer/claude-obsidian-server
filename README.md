@@ -27,26 +27,21 @@ Chat with your vault and ingest content from anywhere via Discord. On desktop, u
 
 ### Local Development
 
-1. Clone repository and setup environment:
+1. Setup environment:
    ```bash
    cd discord-server
    cp .env.example .env
+   # Edit .env with your tokens (see Prerequisites for setup guides)
    ```
 
-2. Configure `.env`:
-   ```
-   DISCORD_BOT_TOKEN=your_token
-   DISCORD_INBOX_CHANNEL_ID=channel_id
-   CLAUDE_CODE_OAUTH_TOKEN=your_token
-   OBSIDIAN_VAULT_PATH=/path/to/vault
-   ```
-
-3. Start Redis and bot:
+2. Start Redis and bot:
    ```bash
    docker run -d -p 6379:6379 --name redis-dev redis:alpine
    npm install
    npm run dev
    ```
+
+**Note**: The `.env` file is only needed for local development. For production deployment via GitHub Actions, configure secrets in your repository settings instead.
 
 ## Production Deployment
 
@@ -54,12 +49,19 @@ Chat with your vault and ingest content from anywhere via Discord. On desktop, u
 
 ### Automated (Reference Implementation)
 
-This project includes a Hetzner-specific GitHub Actions workflow as reference:
+This project includes a GitHub Actions workflow as reference. First, sync your secrets:
 
 ```bash
-./scripts/sync-secrets-to-github.sh  # Syncs secrets to GitHub
+./scripts/sync-secrets-to-github.sh
+# Reads discord-server/.env and syncs to GitHub repository secrets
+```
+
+Then deploy:
+```bash
 git push  # Triggers automated deployment
 ```
+
+**Note**: You need `discord-server/.env` locally only to run the sync script. GitHub Actions will use the synced secrets for deployment.
 
 ### Docker Compose (Generic)
 
