@@ -1,6 +1,8 @@
 # Discord Obsidian Bot
 
-Discord bot that processes shared content into an Obsidian vault using Claude Code SDK. Each message creates a persistent conversation thread with full context and intelligent note creation.
+Turn your Discord channel into a direct interface to Claude Code, operating within your Obsidian vault. Built using the [Claude Agent SDK](https://docs.claude.com/en/api/agent-sdk/overview).
+
+Share content in Discord, get intelligent note creation in your vault with full conversation context.
 
 ## Features
 
