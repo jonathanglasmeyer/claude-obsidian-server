@@ -46,21 +46,30 @@ Discord bot that processes shared content into an Obsidian vault using Claude Co
 
 ## Production Deployment
 
-### Automated (Recommended)
+**Note**: The included deployment scripts target a Hetzner VPS setup with specific infrastructure assumptions (Caddy reverse proxy, Docker network configuration). For other hosting providers, use the Docker Compose setup as a starting point and adapt the deployment workflow to your environment.
 
-Sync secrets and push:
-```bash
-./scripts/sync-secrets-to-github.sh
-git push
-```
+### Automated (Reference Implementation)
 
-Deploys automatically via GitHub Actions on push to main.
-
-### Manual
+This project includes a Hetzner-specific GitHub Actions workflow as reference:
 
 ```bash
-./deploy.sh
+./scripts/sync-secrets-to-github.sh  # Syncs secrets to GitHub
+git push  # Triggers automated deployment
 ```
+
+### Docker Compose (Generic)
+
+For deployment on any Docker host:
+
+```bash
+# Build and run containers
+docker compose up -d
+
+# Check health
+curl http://localhost:3001/health
+```
+
+Customize `docker-compose.yml` and networking for your infrastructure.
 
 ## Monitoring
 
