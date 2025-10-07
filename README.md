@@ -31,7 +31,11 @@ Chat with your vault and ingest content from anywhere via Discord. On desktop, u
    ```bash
    cd discord-server
    cp .env.example .env
-   # Edit .env with your tokens (see Prerequisites for setup guides)
+   # Edit .env with:
+   #   - DISCORD_BOT_TOKEN (from Discord setup guide)
+   #   - DISCORD_INBOX_CHANNEL_ID (channel to monitor)
+   #   - CLAUDE_CODE_OAUTH_TOKEN (from claude setup-token)
+   #   - OBSIDIAN_VAULT_PATH (path to your Obsidian vault)
    ```
 
 2. Start Redis and bot:
