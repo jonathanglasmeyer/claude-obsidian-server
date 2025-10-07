@@ -1,6 +1,6 @@
-# === MULTI-STAGE DOCKERFILE FOR SIZE OPTIMIZATION ===
+# === MULTI-STAGE DOCKERFILE FOR DISCORD BOT ===
 
-# === STAGE 1: BUILD DEPENDENCIES ===  
+# === STAGE 1: BUILD DEPENDENCIES ===
 FROM node:18-slim as builder
 
 # Install build dependencies only (not carried to final image)
@@ -58,7 +58,7 @@ USER node
 # Install uv (Python package manager)
 RUN python3 -m pip install --user --break-system-packages uv
 
-# === CLAUDE CODE INSTALLATION (FIXED) ===
+# === CLAUDE CODE INSTALLATION (ADAPTED FROM SERVER) ===
 # Alternative installation method to avoid curl issues
 RUN wget -O /tmp/claude-install.sh https://claude.ai/install.sh && \
     chmod +x /tmp/claude-install.sh && \
@@ -85,7 +85,7 @@ ENV PATH="/home/node/.local/bin:$PATH"
 
 EXPOSE 3001
 
-# Health check
+# Health check - Discord bot will have /health endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3001/health || exit 1
 

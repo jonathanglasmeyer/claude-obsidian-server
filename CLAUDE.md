@@ -1,13 +1,13 @@
 # CLAUDE.md - Mobile Obsidian Vault Integration
 
 ## Project Overview
-Mobile React Native app + bridge server for intelligently processing shared content into Obsidian vault using Claude Code CLI. Production-ready system with streaming AI chat interface.
+Discord bot + bridge server for intelligently processing shared content into Obsidian vault using Claude Code SDK directly. Production-ready system with thread-based conversation management.
 
-## Current Status: Phase 4.2 Complete ✅
-- ✅ **Production Server**: `obsidian.quietloop.dev` (Docker on Hetzner VPS)
-- ✅ **Android App**: Full chat UI with session management (`ObsidianShare/`)
-- ✅ **Web Prototype**: Professional chat interface (`web-prototype/`)
-- 🔄 **Next**: Android Share Intent integration (Phase 4.3)
+## Current Status: Discord Bot Production Ready 🚀
+- ✅ **Production Server**: Internal Discord bot (Docker on Hetzner VPS) - No public domain
+- ✅ **Discord Bot**: Phase 2.1 + 2.2 complete with conversation context, smart thread naming, and resource management (`discord-server/`)
+- 🔄 **Next**: Phase 2.3 Security + 2.4 Content Processing OR Phase 3 Docker deployment
+- 📦 **Legacy**: Android app (`ObsidianShare/`) and web prototype (`web-prototype/`) - functional but inactive
 
 ## Architecture & Components
 
@@ -41,16 +41,88 @@ Mobile React Native app + bridge server for intelligently processing shared cont
 ## Quick Development Commands
 
 ### Start Development Environment
+
+**⚠️ PREREQUISITES: Redis must be running locally**
 ```bash
-# Local bridge server
+# 1. Start Redis for local development (REQUIRED)
+docker run -d -p 6379:6379 --name redis-dev redis:alpine
+
+# 2. Discord bot server (ACTIVE)
+cd discord-server && npm run dev  # → Bun --watch with colors + tee logging
+
+# Legacy bridge server (for comparison/reference)
 cd server && OBSIDIAN_VAULT_PATH=/Users/jonathan.glasmeyer/Projects/obsidian-vault CLAUDE_CODE_OAUTH_TOKEN=$CLAUDE_CODE_OAUTH_TOKEN node index.js
 
-# Web prototype
+# Legacy web prototype
 cd web-prototype && pnpm run dev  # → http://localhost:3002
 
-# Android development (Expo Go)
+# Legacy Android development
 cd ObsidianShare && npx expo start  # → exp://192.168.178.147:8081
 ```
+
+### Discord Bot Development Workflow
+
+**Local Development with Public URL (SSH Tunnel - NOT ngrok):**
+```bash
+# Terminal 1: Start Redis (if not already running via Docker Desktop)
+docker run -d -p 6379:6379 --name redis-dev redis:alpine
+
+# Terminal 2: Create SSH tunnel to expose local dev via public URL
+ssh -R 0.0.0.0:3099:localhost:3001 -f -N hetzner
+# This exposes your local :3001 via https://obsidian-dev.quietloop.dev
+
+# Terminal 3: Start Discord bot
+cd discord-server
+npm run dev  # Bun --watch with auto-restart + logs to bot.log
+
+# Test endpoints
+curl http://localhost:3001/health                    # Local
+curl https://obsidian-dev.quietloop.dev/health       # Public (via tunnel)
+```
+
+**Monitoring (Claude's perspective):**
+```bash
+# Claude monitors via log file (read-only)
+tail -f discord-server/bot.log
+cat discord-server/bot.log
+```
+
+**Notes:**
+- SSH tunnel port 3099 registered in `~/Projects/quietloop-hetzner-infra/PORT-REGISTRY.md`
+- Caddy config: `~/Projects/quietloop-hetzner-infra/projects/obsidian-dev.caddy`
+- Tunnel uses VPS as reverse proxy (stable URL, no ngrok needed)
+
+### Production Monitoring Commands
+```bash
+# Production container status and health
+cd discord-server
+npm run status    # → docker compose ps
+npm run health    # → curl production health endpoint
+
+# Production logs monitoring
+npm run logs      # → Follow live logs (Ctrl+C to exit)
+npm run logs:tail # → Show last 50 log entries
+
+# Management endpoints (SSH-only, not publicly exposed)
+npm run health    # → Check production health (pretty JSON)
+npm run cleanup   # → ⚠️ DELETE ALL Discord threads (ADMIN ONLY)
+
+# Local development equivalents
+npm run health:local  # → Check local health
+npm run cleanup:local # → Clean local threads
+```
+
+### Session Handover
+**For new Claude sessions:**
+- Status: Phase 2.1 ✅ + Phase 2.2 ✅ (Smart Thread Naming + Resource Management complete)
+- Next: Phase 2.3 Security OR Phase 2.4 Content Processing OR Phase 3 Docker Deployment
+- Quick start: `cd discord-server && npm run dev`
+- Features: Conversation context, smart thread naming, event-driven cleanup, Redis persistence
+
+**Split of Responsibility:**
+- ✅ **User**: Runs `npm run dev` in terminal, sees live output, controls process
+- ✅ **Claude**: Reads `bot.log` file for debugging and monitoring
+- ✅ **Benefit**: No port conflicts, user maintains control, Claude can help debug
 
 ### Production Access
 ```bash
@@ -63,24 +135,28 @@ curl http://localhost:3001/health                 # Via tunnel (direct to contai
 ```
 
 
-## Android App Structure (`ObsidianShare/`)
-- **Architecture**: Stack Navigator + Custom Drawer System (not standard RN Drawer)
-- **Core Flow**: `App.tsx` → `ProgressiveDrawer` wrapping `StartNewScreen`/`ChatScreen`
-- **Navigation**: 2 screens (StartNew, Chat) with custom drawer overlay via `DrawerProvider` context
-- **Components**: 15 custom components (2030+ lines), including `ChatComponent`, `MessageBubble`, `CustomDrawerContent`
-- **State**: `SessionsProvider` + `DrawerProvider` contexts with production API integration
-- **UI**: Material Design 3 (React Native Paper) with custom drawer animations
-- **Features**: Full-featured chat with session management, real-time AI streaming, Markdown rendering
+## Discord Bot Structure (`discord-server/`)
+- **Architecture**: Direct Claude Code SDK integration with thread-based conversation management
+- **Core Flow**: Discord message → Thread creation → Claude processing → Response formatting
+- **Components**: `ThreadManager` for conversation context, Bun --watch for hot reload
+- **Features**: Conversation memory, auto-threading, smart error handling, progress indicators
 
-### Android Development Workflow
-- **Primary**: Expo Go on Android device (no installation needed)
-- **Alternative**: Custom development build for native features
-- **Debugging**: File-based logging (`metro-logs.txt`) for Claude Code inspection
-  ```bash
-  # User starts Metro with file logging (you don't - ask him to do it!)
-  cd ObsidianShare && npm run start:logged  # → metro-logs.txt for Claude Code
-  ```
-- **⚠️ Android Only**: No iOS development in this project
+### Discord Bot Development Workflow
+- **Primary**: `npm run dev` with Bun --watch for instant restarts
+- **Monitoring**: `bot.log` file for Claude Code debugging via `tee`
+- **Authentication**: Uses existing Claude CLI authentication
+- **⚠️ Claude Code SDK**: Direct integration, no AI SDK wrapper complexity
+
+## Legacy Components (Functional but Inactive)
+
+### Android App (`ObsidianShare/`) - LEGACY
+- Full React Native app with streaming chat interface
+- Material Design 3 with custom drawer system
+- Production API integration with session management
+
+### Web Prototype (`web-prototype/`) - LEGACY
+- Next.js chat interface with AI SDK hooks
+- Professional UI for web-based interaction
 
 ## Production Infrastructure
 
@@ -138,6 +214,18 @@ ssh hetzner "docker logs obsidian-redis --tail 20"
 - **Environment**: `CLAUDE_CODE_OAUTH_TOKEN` + `OBSIDIAN_VAULT_PATH` required
 
 ## Common Issues & Solutions
+
+### Discord Bot Development Issues
+**❌ "Redis connection error: getaddrinfo ENOTFOUND"**
+- **Problem**: Redis container not running locally
+- **Fix**: `docker run -d -p 6379:6379 --name redis-dev redis:alpine`
+- **Check**: `docker ps | grep redis` should show running container
+- **Note**: Discord bot REQUIRES Redis for thread management - no fallback mode
+
+**❌ Bot doesn't respond to Discord messages**
+- **Check Discord token**: Verify `DISCORD_BOT_TOKEN` in `.env.local`
+- **Check channel ID**: Verify `DISCORD_INBOX_CHANNEL_ID` in `.env.local`
+- **Check Claude auth**: Verify `CLAUDE_CODE_OAUTH_TOKEN` in `.env.local`
 
 ### SSL/DNS Issues
 ```bash

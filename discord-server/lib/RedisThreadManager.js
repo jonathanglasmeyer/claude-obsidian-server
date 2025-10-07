@@ -60,7 +60,12 @@ export class RedisThreadManager {
       // Run startup cleanup after everything is initialized
       if (this.discordClient) {
         console.log('🔄 Running immediate startup cleanup...');
-        await this.performStartupCleanup();
+        try {
+          await this.performStartupCleanup();
+        } catch (error) {
+          console.error('⚠️ Startup cleanup failed:', error.message);
+          console.log('📝 Continuing without startup cleanup to keep bot functional');
+        }
       }
 
     } catch (error) {
@@ -226,21 +231,6 @@ export class RedisThreadManager {
     }
   }
 
-  /**
-   * Build conversation prompt from history
-   */
-  async buildConversationPrompt(threadId, newMessage) {
-    const conversation = await this.getConversation(threadId);
-
-    let prompt = 'Previous conversation:\n\n';
-
-    for (const msg of conversation) {
-      prompt += `${msg.role}: ${msg.content}\n\n`;
-    }
-
-    prompt += `user: ${newMessage}\n\nassistant: `;
-    return prompt;
-  }
 
   /**
    * Clean up old conversations (Redis handles this automatically with TTL)
@@ -361,6 +351,19 @@ export class RedisThreadManager {
     try {
       // Get all active Discord threads from the inbox channel
       const inboxChannel = await this.discordClient.channels.fetch(process.env.DISCORD_INBOX_CHANNEL_ID);
+
+      if (!inboxChannel) {
+        throw new Error('Inbox channel not found');
+      }
+
+      // Check bot permissions in the channel
+      const botMember = inboxChannel.guild.members.cache.get(this.discordClient.user.id);
+      const permissions = inboxChannel.permissionsFor(botMember);
+
+      if (!permissions || !permissions.has(['ViewChannel', 'ReadMessageHistory', 'ManageThreads'])) {
+        throw new Error('Missing required permissions: ViewChannel, ReadMessageHistory, ManageThreads');
+      }
+
       const threads = await inboxChannel.threads.fetchActive();
 
       // Only check active threads (archived threads can't be managed anymore)
@@ -419,7 +422,16 @@ export class RedisThreadManager {
       }
 
     } catch (error) {
-      console.error('⚠️ Startup cleanup failed:', error.message);
+      if (error.message.includes('Missing Access')) {
+        console.error('⚠️ Startup cleanup failed: Bot lacks Discord permissions');
+        console.log('📋 Required permissions: View Channel, Read Message History, Manage Threads');
+        console.log('🔧 Please check bot permissions in Discord server settings');
+      } else if (error.message.includes('permissions')) {
+        console.error('⚠️ Startup cleanup failed:', error.message);
+        console.log('🔧 Please grant bot the required Discord permissions');
+      } else {
+        console.error('⚠️ Startup cleanup failed:', error.message);
+      }
     }
   }
 

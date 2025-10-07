@@ -2,7 +2,7 @@
 
 set -e
 
-echo "🚀 Deploying Claude Obsidian Bridge Server to Hetzner..."
+echo "🚀 Deploying Discord Claude Bot to Hetzner..."
 
 # Configuration
 REMOTE_HOST="hetzner"
@@ -19,22 +19,30 @@ else
     validate_local_ports() { return 0; }
 fi
 
-# Load Claude token from local server/.env
-if [ -f server/.env ]; then
-    source server/.env
-    echo "🔑 Loaded environment from server/.env"
+# Load Claude token from local discord-server/.env
+if [ -f discord-server/.env ]; then
+    source discord-server/.env
+    echo "🔑 Loaded environment from discord-server/.env"
     if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
-        echo "🔑 Claude token found in server/.env"
+        echo "🔑 Claude token found in discord-server/.env"
     else
-        echo "⚠️ WARNING: No CLAUDE_CODE_OAUTH_TOKEN in server/.env. Server will fail authentication."
+        echo "⚠️ WARNING: No CLAUDE_CODE_OAUTH_TOKEN in discord-server/.env. Bot will fail authentication."
+    fi
+    if [ -n "$DISCORD_BOT_TOKEN" ]; then
+        echo "🤖 Discord bot token found in discord-server/.env"
+    else
+        echo "⚠️ WARNING: No DISCORD_BOT_TOKEN in discord-server/.env. Bot will fail to connect."
     fi
 else
-    echo "❌ ERROR: server/.env file not found"
+    echo "❌ ERROR: discord-server/.env file not found"
     exit 1
 fi
 
 # Pre-deployment validation
 validate_local_ports "$PROJECT_NAME" || exit 1
+
+# Skip Caddy validation - Discord bot is internal-only (no public routing)
+echo "⚠️ Skipping Caddy validation - service is internal-only"
 
 # Test SSH connection
 echo "🔍 Testing SSH connection..."
@@ -69,17 +77,17 @@ fi
 
 ssh "$REMOTE_HOST" "cd $REMOTE_PATH && \
     echo '📦 Installing/updating dependencies...' && \
-    cd server && npm install --production && \
+    cd discord-server && npm install --production && \
     cd .. && \
     echo '🌐 Ensuring shared Docker network exists...' && \
     docker network inspect quietloop-network >/dev/null 2>&1 || docker network create quietloop-network && \
     echo '🔄 Stopping existing services...' && \
     docker compose down || true && \
-    echo '🚀 Starting services (with optimized build)...' && \
-    CLAUDE_CODE_OAUTH_TOKEN=\"$CLAUDE_CODE_OAUTH_TOKEN\" docker compose up -d --build && \
+    echo '🚀 Starting Discord Bot services (with optimized build)...' && \
+    docker compose up -d --build && \
     echo '🔧 Fixing vault permissions for container UID mapping...' && \
     chown -R 1000:1000 /srv/claude-jobs/obsidian-vault && \
-    echo '⏳ Waiting for services to be ready...' && \
+    echo '⏳ Waiting for Discord Bot to be ready...' && \
     sleep 15"
 
 # Post-deployment verification (if utilities available)
@@ -102,3 +110,4 @@ else
     echo "   ssh $REMOTE_HOST 'cd $REMOTE_PATH && docker compose logs -f'"
     echo "   ssh $REMOTE_HOST 'cd $REMOTE_PATH && docker compose ps'"
 fi
+

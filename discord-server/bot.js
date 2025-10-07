@@ -19,7 +19,7 @@ import {
   ButtonBuilder,
   MessageFlags
 } from 'discord.js';
-import { query } from '@anthropic-ai/claude-code';
+import { query } from '@anthropic-ai/claude-agent-sdk';
 import { RedisThreadManager } from './lib/RedisThreadManager.js';
 import { ResponseFormatter } from './lib/ResponseFormatter.js';
 import { ComponentsResponseFormatter } from './lib/ComponentsResponseFormatter.js';

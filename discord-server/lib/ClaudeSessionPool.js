@@ -1,4 +1,4 @@
-import { query } from '@anthropic-ai/claude-code';
+import { query } from '@anthropic-ai/claude-agent-sdk';
 
 class ClaudeSessionPool {
   constructor(redisClient) {

@@ -7,13 +7,13 @@ services:
     restart: unless-stopped
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --notify-keyspace-events Ex
     networks:
       - quietloop-network
 
-  server:
-    build: 
-      context: ./server
+  discord-bot:
+    build:
+      context: ./discord-server
       dockerfile: Dockerfile
     container_name: obsidian-server
     restart: unless-stopped
@@ -22,19 +22,20 @@ services:
     environment:
       - NODE_ENV=production
       - REDIS_URL=redis://redis:6379
-      - CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN}
     env_file:
-      - ./server/.env
+      - ./discord-server/.env
     depends_on:
       - redis
     volumes:
       - /srv/claude-jobs:/srv/claude-jobs:rw
       - /home/claude/.ssh:/home/node/.ssh:ro
+      - claude_config:/home/node/.claude-config:rw
     networks:
       - quietloop-network
 
 volumes:
   redis_data:
+  claude_config:
 
 networks:
   quietloop-network:

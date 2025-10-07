@@ -40,32 +40,6 @@ export class ThreadManager {
     console.log(`💬 Added ${role} message to thread ${threadId} (${conversation.length} total)`);
   }
 
-  /**
-   * Build conversation context for Claude
-   */
-  buildConversationPrompt(threadId, newMessage) {
-    const history = this.getConversation(threadId);
-
-    if (history.length === 0) {
-      // First message in thread
-      return newMessage;
-    }
-
-    // Build context with recent history
-    let prompt = "Previous conversation:\n";
-
-    // Use last 10 messages for context (to avoid token limits)
-    const recentHistory = history.slice(-10);
-
-    recentHistory.forEach(msg => {
-      prompt += `${msg.role}: ${msg.content}\n`;
-    });
-
-    prompt += `\nuser: ${newMessage}`;
-
-    console.log(`🔄 Built conversation prompt with ${recentHistory.length} previous messages`);
-    return prompt;
-  }
 
   /**
    * Clean up old conversations to prevent memory leaks
