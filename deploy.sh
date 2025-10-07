@@ -5,15 +5,8 @@ set -e
 echo "🚀 Deploying Discord Bot..."
 
 # Configuration - customize these for your setup
-REMOTE_HOST="your-server"
-REMOTE_PATH="~/discord-obsidian-bot"
-
-# Check for .env file
-if [ ! -f discord-server/.env ]; then
-    echo "❌ ERROR: discord-server/.env file not found"
-    echo "Copy discord-server/.env.example to discord-server/.env and configure it"
-    exit 1
-fi
+REMOTE_HOST="${REMOTE_HOST:-your-server}"
+REMOTE_PATH="${REMOTE_PATH:-~/discord-obsidian-bot}"
 
 # Test SSH connection
 echo "🔍 Testing SSH connection..."

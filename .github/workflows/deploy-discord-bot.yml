@@ -61,13 +61,11 @@ jobs:
 
       - name: Run deploy.sh
         run: |
-          # Make deploy.sh executable
           chmod +x deploy.sh
-
-          # Run deploy script
           ./deploy.sh
         env:
-          CI: true
+          REMOTE_HOST: hetzner
+          REMOTE_PATH: ~/obsidian-bridge-server
 
       - name: Deployment summary
         if: success()
