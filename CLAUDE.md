@@ -1,63 +1,42 @@
-# CLAUDE.md - Mobile Obsidian Vault Integration
+# CLAUDE.md - Discord Obsidian Bot
 
 ## Project Overview
-Discord bot + bridge server for intelligently processing shared content into Obsidian vault using Claude Code SDK directly. Production-ready system with thread-based conversation management.
+Discord bot for intelligently processing shared content into Obsidian vault using Claude Code SDK directly. Production-ready system with thread-based conversation management, automated deployment via GitHub Actions.
 
-## Current Status: Discord Bot Production Ready 🚀
-- ✅ **Production Server**: Internal Discord bot (Docker on Hetzner VPS) - No public domain
-- ✅ **Discord Bot**: Phase 2.1 + 2.2 complete with conversation context, smart thread naming, and resource management (`discord-server/`)
-- 🔄 **Next**: Phase 2.3 Security + 2.4 Content Processing OR Phase 3 Docker deployment
-- 📦 **Legacy**: Android app (`ObsidianShare/`) and web prototype (`web-prototype/`) - functional but inactive
+## Current Status: Production Ready 🚀
+- ✅ **Production**: Discord bot running on Hetzner VPS (Docker + Redis)
+- ✅ **Features**: Conversation context, smart thread naming, resource management
+- ✅ **CI/CD**: Automated deployment via GitHub Actions on push to main
+- 🔄 **Next**: Phase 2.3 Security + 2.4 Content Processing enhancements
 
 ## Architecture & Components
 
 ### Security
-- **API Protection**: All endpoints secured with `x-api-key` header validation
-- **Environment Variables**: API keys stored in `.env` files (gitignored)
-  - Server: `API_SECRET_KEY` in `server/.env`
-  - Android: `EXPO_PUBLIC_API_SECRET_KEY` in `ObsidianShare/.env`
-  - Web: `API_SECRET_KEY` in `web-prototype/.env.local`
-- **Production**: Same API key deployed via Docker environment variables
-- **Access Control**: Only health endpoint (`/health`) bypasses authentication
+- **Environment Variables**: Secrets stored in `discord-server/.env` (gitignored)
+- **GitHub Secrets**: Production secrets managed via GitHub Actions
+- **Access Control**: Health endpoint (`/health`) public, admin endpoints SSH-only
 
-### Local Development
-- **Server**: `server/` - Bridge server with AI SDK v5 + Redis session persistence
-- **Android**: `ObsidianShare/` - React Native with Drawer Navigator + streaming chat
-- **Web**: `web-prototype/` - Next.js with AI SDK hooks
+### Architecture
+- **Discord Bot**: `discord-server/` - Claude Code SDK + Thread Management
+- **Redis**: Session persistence with 24h TTL
+- **Docker**: Multi-container setup (bot + redis)
 - **Vault**: Claude Code CLI operates in actual Obsidian vault directory
 
 ### Port Allocation
 - **Production**: Port `3001` (registered in `/opt/quietloop-infra/PORT-REGISTRY.md`)
 - **Local Dev**: Port `3001` (matches production)
-- **Web Prototype**: Port `3002` (development only)
 - **Redis**: Port `6379` (internal only)
-- **Next Available**: Port `3003` (for new services)
-
-**⚠️ Port Requirements:**
-- ALWAYS check `PORT-REGISTRY.md` before choosing ports
-- Use `validate_port_usage()` in deployment scripts
-- Update registry when deploying new services
 
 ## Quick Development Commands
 
 ### Start Development Environment
 
-**⚠️ PREREQUISITES: Redis must be running locally**
 ```bash
-# 1. Start Redis for local development (REQUIRED)
+# 1. Start Redis (REQUIRED)
 docker run -d -p 6379:6379 --name redis-dev redis:alpine
 
-# 2. Discord bot server (ACTIVE)
-cd discord-server && npm run dev  # → Bun --watch with colors + tee logging
-
-# Legacy bridge server (for comparison/reference)
-cd server && OBSIDIAN_VAULT_PATH=/Users/jonathan.glasmeyer/Projects/obsidian-vault CLAUDE_CODE_OAUTH_TOKEN=$CLAUDE_CODE_OAUTH_TOKEN node index.js
-
-# Legacy web prototype
-cd web-prototype && pnpm run dev  # → http://localhost:3002
-
-# Legacy Android development
-cd ObsidianShare && npx expo start  # → exp://192.168.178.147:8081
+# 2. Start Discord bot
+cd discord-server && npm run dev  # → Bun --watch with auto-restart + logging
 ```
 
 ### Discord Bot Development Workflow
@@ -141,22 +120,11 @@ curl http://localhost:3001/health                 # Via tunnel (direct to contai
 - **Components**: `ThreadManager` for conversation context, Bun --watch for hot reload
 - **Features**: Conversation memory, auto-threading, smart error handling, progress indicators
 
-### Discord Bot Development Workflow
+### Development Workflow
 - **Primary**: `npm run dev` with Bun --watch for instant restarts
-- **Monitoring**: `bot.log` file for Claude Code debugging via `tee`
+- **Monitoring**: `bot.log` file for debugging via `tee`
 - **Authentication**: Uses existing Claude CLI authentication
 - **⚠️ Claude Code SDK**: Direct integration, no AI SDK wrapper complexity
-
-## Legacy Components (Functional but Inactive)
-
-### Android App (`ObsidianShare/`) - LEGACY
-- Full React Native app with streaming chat interface
-- Material Design 3 with custom drawer system
-- Production API integration with session management
-
-### Web Prototype (`web-prototype/`) - LEGACY
-- Next.js chat interface with AI SDK hooks
-- Professional UI for web-based interaction
 
 ## Production Deployment
 
