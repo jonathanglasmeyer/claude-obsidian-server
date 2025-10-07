@@ -1,4 +1,4 @@
-# Discord Obsidian Bot
+# Claude Obsidian Server
 
 Mobile access to Claude Code within your Obsidian vault. Built using the [Claude Agent SDK](https://docs.claude.com/en/api/agent-sdk/overview).
 
