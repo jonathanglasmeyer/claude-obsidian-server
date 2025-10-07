@@ -92,8 +92,7 @@ npm run health     # Health check
 ## Documentation
 
 - [DISCORD-SETUP.md](discord-server/DISCORD-SETUP.md) - Discord bot configuration
-- [CLAUDE.md](CLAUDE.md) - Comprehensive docs
-- [docs/architecture/](docs/architecture/) - Technical details
+- [CLAUDE.md](CLAUDE.md) - Comprehensive docs for development and deployment
 
 ## License
 

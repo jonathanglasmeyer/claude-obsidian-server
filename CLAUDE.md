@@ -171,13 +171,3 @@ docker ps | grep redis  # Verify running
 ### Claude CLI Authentication
 **Fix**: Run `claude setup-token` and copy token to `.env` as `CLAUDE_CODE_OAUTH_TOKEN`
 
-## Documentation
-
-### Architecture
-- [infrastructure.md](docs/architecture/infrastructure.md) - Production infrastructure details
-
-### Features
-- [discord-bot-performance-optimization.md](docs/features/discord-bot-performance-optimization.md) - Performance optimization specs
-
-### Technical Reference
-- [claude-code-sdk-session-management.md](docs/claude-code-sdk-session-management.md) - Claude Code SDK integration details
