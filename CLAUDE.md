@@ -3,10 +3,11 @@
 ## Project Overview
 Discord bot for intelligently processing shared content into Obsidian vault using Claude Code SDK directly. Production-ready system with thread-based conversation management, automated deployment via GitHub Actions.
 
-## Current Status: Production Ready
-- Production: Discord bot running on Hetzner VPS (Docker + Redis)
-- Features: Conversation context, smart thread naming, resource management
-- CI/CD: Automated deployment via GitHub Actions on push to main
+## Current Status
+- **Reference Implementation**: Production-ready codebase with working deployment pipeline
+- **Self-hosted**: Designed for personal deployment on your own infrastructure
+- **Features**: Conversation context, smart thread naming, resource management
+- **CI/CD**: Automated deployment example via GitHub Actions
 
 ## Architecture
 
