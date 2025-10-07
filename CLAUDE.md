@@ -119,36 +119,25 @@ npm run health     # Health check
 ./deploy.sh  # Detects CI mode automatically
 ```
 
-## Production Infrastructure
+## Production Management
 
-### Architecture
-```
-Production Domain (SSL: Let's Encrypt)
-├── Reverse Proxy (Caddy) - ports 80/443
-├── Discord Bot Container - port 3001
-└── Redis Container - port 6379
-```
-
-**Network**: All services communicate via shared Docker network.
-
-### Management Commands
+### Container Commands
 ```bash
-# Container status
-ssh production-server "cd ~/obsidian-bridge-server && docker compose ps"
+# Status
+docker compose ps
 
 # Restart services
-ssh production-server "cd ~/obsidian-bridge-server && docker compose restart"
+docker compose restart
 
 # View logs
-ssh production-server "docker logs obsidian-server --tail 20"
-ssh production-server "docker logs obsidian-redis --tail 20"
+docker compose logs -f discord-bot
+docker compose logs -f redis
 ```
 
-### Critical Configuration
-- **SSL**: Let's Encrypt via Caddy, automatic renewal
-- **Data**: Redis persistence with Docker volumes, 24h session TTL
-- **Network**: Shared Docker network for inter-service communication
-- **Environment**: `CLAUDE_CODE_OAUTH_TOKEN` + `OBSIDIAN_VAULT_PATH` required
+### Required Configuration
+- **Environment**: `CLAUDE_CODE_OAUTH_TOKEN` + `OBSIDIAN_VAULT_PATH` in `.env`
+- **Redis**: Data persists via Docker volumes, 24h session TTL
+- **Network**: Bot connects to Discord via WebSocket (no public HTTP access needed)
 
 ## Common Issues & Solutions
 
