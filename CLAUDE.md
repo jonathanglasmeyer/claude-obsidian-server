@@ -1,7 +1,16 @@
 # CLAUDE.md - Discord Obsidian Bot
 
 ## Project Overview
-Discord bot for intelligently processing shared content into Obsidian vault using Claude Code SDK directly. Production-ready system with thread-based conversation management, automated deployment via GitHub Actions.
+
+A Discord bot that turns your Discord channel into a direct interface to Claude, operating within your Obsidian vault context.
+
+**User Flow**:
+1. Share content in Discord (text, links, ideas)
+2. Bot creates a dedicated thread for your conversation
+3. Claude processes your request with full access to your vault
+4. Results are saved directly to your Obsidian notes
+
+**Value**: Skip the context-switching between Discord, Claude, and Obsidian. Your Discord messages become intelligent note creation commands with persistent conversation history.
 
 ## Current Status
 - **Reference Implementation**: Production-ready codebase with working deployment pipeline
