@@ -8,8 +8,6 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes --notify-keyspace-events Ex
-    networks:
-      - quietloop-network
 
   discord-bot:
     build:
@@ -30,13 +28,7 @@ services:
       - /srv/claude-jobs:/srv/claude-jobs:rw
       - /home/claude/.ssh:/home/node/.ssh:ro
       - claude_config:/home/node/.claude-config:rw
-    networks:
-      - quietloop-network
 
 volumes:
   redis_data:
   claude_config:
-
-networks:
-  quietloop-network:
-    external: true

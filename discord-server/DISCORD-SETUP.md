@@ -145,6 +145,6 @@ Once local testing works:
 1. **Create production bot** (optional - separate bot for prod)
 2. **Update production .env** with production tokens
 3. **Deploy**: `./deploy.sh`
-4. **Verify**: `curl https://obsidian.quietloop.dev/health`
+4. **Verify**: `curl http://localhost:3001/health`
 
 Your Discord bot is now ready to use with Claude Code integration!
