@@ -1,0 +1,77 @@
+name: Deploy Discord Bot to Hetzner
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'discord-server/**'
+      - 'docker-compose.yml'
+      - 'deploy.sh'
+      - '.github/workflows/deploy-discord-bot.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Hetzner VPS
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        working-directory: discord-server
+        run: bun install --frozen-lockfile
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.HETZNER_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          # Configure SSH host alias
+          cat >> ~/.ssh/config << EOF
+          Host hetzner
+            HostName ${{ secrets.HETZNER_HOST }}
+            User ${{ secrets.HETZNER_USER }}
+            IdentityFile ~/.ssh/id_ed25519
+            StrictHostKeyChecking no
+          EOF
+
+          # Add host to known_hosts
+          ssh-keyscan -H ${{ secrets.HETZNER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create .env from secrets
+        working-directory: discord-server
+        run: |
+          cat << EOF > .env
+          DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_INBOX_CHANNEL_ID=${{ secrets.DISCORD_INBOX_CHANNEL_ID }}
+          CLAUDE_CODE_OAUTH_TOKEN=${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          OBSIDIAN_VAULT_PATH=/srv/claude-jobs/obsidian-vault
+          REDIS_HOST=obsidian-redis
+          REDIS_PORT=6379
+          PORT=3001
+          NODE_ENV=production
+          EOF
+
+      - name: Run deploy.sh
+        run: |
+          # Make deploy.sh executable
+          chmod +x deploy.sh
+
+          # Run deploy script
+          ./deploy.sh
+        env:
+          CI: true
+
+      - name: Deployment summary
+        if: success()
+        run: |
+          echo "✅ Discord Bot deployment complete!"
+          echo "🤖 Bot: Internal Discord bot (no public endpoint)"
+          echo "🏥 Health: https://obsidian.quietloop.dev/health"

@@ -158,6 +158,57 @@ curl http://localhost:3001/health                 # Via tunnel (direct to contai
 - Next.js chat interface with AI SDK hooks
 - Professional UI for web-based interaction
 
+## Production Deployment
+
+### Automated Deployment via GitHub Actions
+
+**GitHub Actions Workflow:** `.github/workflows/deploy-discord-bot.yml`
+
+**Trigger:** Push to `main` with changes to:
+- `discord-server/**`
+- `docker-compose.yml`
+- `deploy.sh`
+- `.github/workflows/deploy-discord-bot.yml`
+
+**Deploy Flow:**
+1. Bun setup + dependency installation
+2. SSH setup via GitHub Secrets
+3. Create `.env` from GitHub Secrets
+4. Execute `deploy.sh` (CI mode)
+5. Health check + deployment summary
+
+**Manual Deploy (fallback):**
+```bash
+./deploy.sh  # Detects CI mode automatically
+```
+
+### GitHub Secrets Setup (One-Time)
+
+**Sync Secrets to GitHub:**
+```bash
+# One command syncs everything (reads discord-server/.env + SSH config)
+./scripts/sync-secrets-to-github.sh
+```
+
+**What the script does:**
+- Reads all secrets from `discord-server/.env` and syncs to GitHub
+- Auto-detects Hetzner SSH config from `~/.ssh/config` (hetzner alias)
+- Extracts SSH key, host, and user automatically
+- Validates all required secrets are configured
+
+**Required Secrets:**
+- `DISCORD_BOT_TOKEN` - Discord bot authentication
+- `DISCORD_INBOX_CHANNEL_ID` - Channel for bot messages
+- `CLAUDE_CODE_OAUTH_TOKEN` - Claude API authentication
+- `HETZNER_SSH_KEY` - SSH private key for deployment
+- `HETZNER_HOST` - VPS IP address
+- `HETZNER_USER` - SSH user (usually root)
+
+**When to Re-run:**
+- Initial setup (one-time)
+- When secrets in `discord-server/.env` change
+- When rotating credentials
+
 ## Production Infrastructure
 
 ### Clean Architecture ✅

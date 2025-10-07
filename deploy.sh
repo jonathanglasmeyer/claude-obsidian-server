@@ -10,32 +10,48 @@ REMOTE_PATH="~/obsidian-bridge-server"
 PROJECT_NAME="quietloop-claude-obsidian-server"
 SERVICE_URL="https://obsidian.quietloop.dev"
 
-# Load port validation from infra repo
-INFRA_SCRIPTS="../quietloop-hetzner-infra/scripts"
-if [ -f "$INFRA_SCRIPTS/validate-local-ports.sh" ]; then
-    source "$INFRA_SCRIPTS/validate-local-ports.sh"
+# Load port validation from infra repo (skip in CI)
+if [ -z "$CI" ]; then
+    INFRA_SCRIPTS="../quietloop-hetzner-infra/scripts"
+    if [ -f "$INFRA_SCRIPTS/validate-local-ports.sh" ]; then
+        source "$INFRA_SCRIPTS/validate-local-ports.sh"
+    else
+        echo "⚠️ Port validation script not found - skipping validation"
+        validate_local_ports() { return 0; }
+    fi
 else
-    echo "⚠️ Port validation script not found - skipping validation"
+    # CI mode: Skip port validation
     validate_local_ports() { return 0; }
 fi
 
-# Load Claude token from local discord-server/.env
-if [ -f discord-server/.env ]; then
-    source discord-server/.env
-    echo "🔑 Loaded environment from discord-server/.env"
-    if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
-        echo "🔑 Claude token found in discord-server/.env"
+# Load or verify environment variables
+if [ -z "$CI" ]; then
+    # Local deployment: Load from .env file
+    if [ -f discord-server/.env ]; then
+        source discord-server/.env
+        echo "🔑 Loaded environment from discord-server/.env"
+        if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+            echo "🔑 Claude token found in discord-server/.env"
+        else
+            echo "⚠️ WARNING: No CLAUDE_CODE_OAUTH_TOKEN in discord-server/.env. Bot will fail authentication."
+        fi
+        if [ -n "$DISCORD_BOT_TOKEN" ]; then
+            echo "🤖 Discord bot token found in discord-server/.env"
+        else
+            echo "⚠️ WARNING: No DISCORD_BOT_TOKEN in discord-server/.env. Bot will fail to connect."
+        fi
     else
-        echo "⚠️ WARNING: No CLAUDE_CODE_OAUTH_TOKEN in discord-server/.env. Bot will fail authentication."
-    fi
-    if [ -n "$DISCORD_BOT_TOKEN" ]; then
-        echo "🤖 Discord bot token found in discord-server/.env"
-    else
-        echo "⚠️ WARNING: No DISCORD_BOT_TOKEN in discord-server/.env. Bot will fail to connect."
+        echo "❌ ERROR: discord-server/.env file not found"
+        exit 1
     fi
 else
-    echo "❌ ERROR: discord-server/.env file not found"
-    exit 1
+    # CI deployment: .env file created by GitHub Actions
+    if [ -f discord-server/.env ]; then
+        echo "🔑 Using .env created by GitHub Actions"
+    else
+        echo "❌ ERROR: discord-server/.env not found (should be created by GitHub Actions)"
+        exit 1
+    fi
 fi
 
 # Pre-deployment validation
