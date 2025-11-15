@@ -77,22 +77,23 @@ npm run health     # Health check
 - `ErrorHandler` - Error handling
 - `ProgressReporter` - Progress indicators
 
+### /stop Command
+
+Slash command `/stop` interrupts running Claude requests. Uses `stream.interrupt()` from Claude Agent SDK. Session context preserved (only current request stopped). Empty responses skipped to prevent Discord errors (bot.js:333).
+
 ## Production Deployment
 
-### Automated via GitHub Actions
+### CI/CD via GitHub Actions (~70s)
 
-**Trigger**: Push to `main` with changes to:
-- `discord-server/**`
-- `docker-compose.yml`
-- `deploy.sh`
-- `.github/workflows/deploy-discord-bot.yml`
+**Trigger**: Push to `main` with changes in `discord-server/**`, `docker-compose.yml`, `deploy.sh`, `.github/workflows/`
 
-**Deploy Flow**:
-1. Bun setup + dependency installation
-2. SSH setup via GitHub Secrets
-3. Create `.env` from GitHub Secrets
-4. Execute `deploy.sh` (CI mode)
-5. Health check + deployment summary
+**Optimizations**:
+- Claude CLI layer cached (rebuilds only on Dockerfile changes, not code)
+- Zero-downtime: builds first, deploys second; old container runs until new healthy
+- Health checks: Redis + bot `/health` endpoint; deployment fails if unhealthy
+- Fast feedback: status every 10s via `gh run list`
+
+**Deploy**: GitHub Actions → rsync → Docker build (cached) → `--no-deps` restart → health check wait (60s timeout)
 
 ### GitHub Secrets Setup (One-Time)
 
