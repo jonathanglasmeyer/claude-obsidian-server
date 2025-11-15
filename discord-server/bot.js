@@ -203,11 +203,13 @@ client.on('messageCreate', async (message) => {
       let sessionId = null;
       let toolCalls = [];
       let streamStartTime = performance.now();
+      let wasInterrupted = false;
 
       // Tool deduplication for display (not execution)
       const reportedTools = new Set();
 
-      for await (const msg of stream) {
+      try {
+        for await (const msg of stream) {
         // Debug: log all message types to understand Claude stream
         console.log(`🔍 Claude stream message type: ${msg.type}`, Object.keys(msg));
 
@@ -279,23 +281,33 @@ client.on('messageCreate', async (message) => {
           duration = msg.duration_ms;
           break;
         }
+        }
+      } catch (error) {
+        // Stream was interrupted or errored
+        if (error.name === 'AbortError' || error.message?.includes('interrupt')) {
+          console.log('🛑 Stream was interrupted by user');
+          wasInterrupted = true;
+        } else {
+          throw error; // Re-throw non-interrupt errors
+        }
       }
 
       const streamDuration = performance.now() - streamStartTime;
       return {
-        fullResponse,
+        fullResponse: fullResponse || '',
         usage,
         duration,
         sessionId,
-        toolCalls,
-        streamDuration
+        toolCalls: toolCalls || [],
+        streamDuration,
+        wasInterrupted
       };
     }, {
       context: 'Claude processing',
       maxRetries: 3
     });
 
-    const { fullResponse, usage, duration, sessionId, toolCalls, streamDuration } = claudeResult;
+    const { fullResponse, usage, duration, sessionId, toolCalls, streamDuration, wasInterrupted } = claudeResult;
 
     // Update session ID in session pool if we got one
     if (sessionId) {
@@ -303,8 +315,8 @@ client.on('messageCreate', async (message) => {
     }
 
     tracer.endPhase({
-      responseLength: fullResponse.length,
-      toolCallCount: toolCalls.length,
+      responseLength: fullResponse?.length || 0,
+      toolCallCount: toolCalls?.length || 0,
       sessionId: sessionId,
       claudeDuration: duration,
       streamDuration: streamDuration,
@@ -315,6 +327,14 @@ client.on('messageCreate', async (message) => {
     tracer.startPhase('progress_stop');
     progressReporter.stop();
     tracer.endPhase();
+
+    // If stream was interrupted, don't send any response
+    // The /stop command already sent a reply
+    if (wasInterrupted) {
+      console.log('🛑 Stream interrupted, skipping response');
+      tracer.addMetadata('interrupted', true);
+      return;
+    }
 
     // Prepare stats for Components v2
     const progressToolCalls = progressReporter.toolCalls || [];
@@ -494,7 +514,7 @@ client.on('interactionCreate', async (interaction) => {
       activeStreams.delete(threadId);
 
       await interaction.reply({
-        content: '🛑 Claude-Anfrage gestoppt. Session bleibt erhalten.',
+        content: 'Interrupted · What should Claude do instead?',
         ephemeral: false
       });
 
