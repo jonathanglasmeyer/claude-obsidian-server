@@ -8,6 +8,12 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes --notify-keyspace-events Ex
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
   discord-bot:
     build:
@@ -23,11 +29,18 @@ services:
     env_file:
       - ./discord-server/.env
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     volumes:
       - /srv/claude-jobs:/srv/claude-jobs:rw
       - /home/claude/.ssh:/home/node/.ssh:ro
       - claude_config:/home/node/.claude-config:rw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 volumes:
   redis_data:

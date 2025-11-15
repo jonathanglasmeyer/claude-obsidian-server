@@ -28,6 +28,11 @@ A Discord bot that provides mobile access to Claude Code within your Obsidian va
 - **Redis**: Stores conversation threads and session state (24h TTL, survives bot restarts)
 - **Obsidian Vault**: Your vault directory is mounted into the container, accessible to Claude Code
 
+### Vault Sync
+- **Mobile Sync**: Obsidian vault synced from Pixel 9 via Syncthing
+- **Git Integration**: Automated pull every 30min (fast-forward only)
+- **Documentation**: See [Obsidian Vault Sync Setup](../obsidian-vault/docs/obsidian-vault-sync.md)
+
 ### Security
 - **Environment Variables**: Secrets stored in `discord-server/.env` (gitignored)
 - **GitHub Secrets**: Production secrets managed via GitHub Actions

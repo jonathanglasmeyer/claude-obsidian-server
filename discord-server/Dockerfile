@@ -44,9 +44,6 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 
-# Copy application code (after .dockerignore filtering)
-COPY . .
-
 # Create directories for SSH keys and vault
 RUN mkdir -p /home/node/.ssh /srv/claude-jobs/obsidian-vault && \
     chown -R node:node /home/node/.ssh && \
@@ -55,20 +52,18 @@ RUN mkdir -p /home/node/.ssh /srv/claude-jobs/obsidian-vault && \
 # Switch to node user for installations
 USER node
 
-# Install uv (Python package manager)
+# Install uv (Python package manager) - CACHED LAYER
 RUN python3 -m pip install --user --break-system-packages uv
 
-# === CLAUDE CODE INSTALLATION (ADAPTED FROM SERVER) ===
-# Alternative installation method to avoid curl issues
-RUN wget -O /tmp/claude-install.sh https://claude.ai/install.sh && \
-    chmod +x /tmp/claude-install.sh && \
-    bash /tmp/claude-install.sh || { \
-        echo "Claude install failed, installing via direct method..."; \
-        mkdir -p /home/node/.local/bin; \
-        wget -O /home/node/.local/bin/claude https://github.com/anthropics/claude-cli/releases/latest/download/claude-linux-x86_64 && \
-        chmod +x /home/node/.local/bin/claude; \
-    } && \
-    rm -f /tmp/claude-install.sh
+# === CLAUDE CODE INSTALLATION - CACHED LAYER ===
+# This layer is cached and only rebuilt when Claude CLI updates
+# Using direct download for reliability
+RUN mkdir -p /home/node/.local/bin && \
+    wget -O /home/node/.local/bin/claude https://github.com/anthropics/claude-cli/releases/latest/download/claude-linux-x86_64 && \
+    chmod +x /home/node/.local/bin/claude
+
+# Copy application code AFTER CLI install (so code changes don't rebuild Claude CLI)
+COPY . .
 
 # Switch back to root to create symlinks, copy entrypoint, and fix PATH
 USER root

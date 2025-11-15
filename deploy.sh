@@ -24,24 +24,28 @@ rsync -avz --delete \
     --exclude='.DS_Store' \
     ./ "$REMOTE_HOST:$REMOTE_PATH/"
 
-# Build and deploy on remote server
-echo "🔨 Building and starting services on remote server..."
-
+# Build new image on remote server
+echo "🔨 Building new Docker image on remote server..."
 ssh "$REMOTE_HOST" "cd $REMOTE_PATH && \
     echo '📦 Installing dependencies...' && \
     cd discord-server && npm install --production && \
     cd .. && \
-    echo '🔄 Stopping existing services...' && \
-    docker compose down || true && \
-    echo '🚀 Starting Discord Bot services...' && \
-    docker compose up -d --build && \
-    echo '⏳ Waiting for services to be ready...' && \
-    sleep 10"
+    echo '🏗️  Building new Docker image...' && \
+    docker compose build"
 
-# Health check
-echo "🩺 Checking service health..."
+# Deploy with zero-downtime using health checks
+echo "🚀 Deploying with zero-downtime..."
+ssh "$REMOTE_HOST" "cd $REMOTE_PATH && \
+    echo '🔄 Starting new container...' && \
+    docker compose up -d --no-deps discord-bot && \
+    echo '⏳ Waiting for health check...' && \
+    timeout 60 sh -c 'until docker inspect obsidian-server | grep -q \"\\\"Status\\\": \\\"healthy\\\"\"; do echo \"Waiting for container to be healthy...\"; sleep 2; done' && \
+    echo '✅ Container healthy, deployment complete'"
+
+# Final health check
+echo "🩺 Final health check..."
 ssh "$REMOTE_HOST" "cd $REMOTE_PATH && docker compose ps"
-ssh "$REMOTE_HOST" "curl -f http://localhost:3001/health || echo '⚠️  Health check failed - check logs'"
+ssh "$REMOTE_HOST" "curl -f http://localhost:3001/health && echo '✅ Health check passed' || echo '⚠️  Health check failed - check logs'"
 
 echo ""
 echo "✅ Deployment complete!"
