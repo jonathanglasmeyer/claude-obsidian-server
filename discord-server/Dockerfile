@@ -56,11 +56,12 @@ USER node
 RUN python3 -m pip install --user --break-system-packages uv
 
 # === CLAUDE CODE INSTALLATION - CACHED LAYER ===
-# This layer is cached and only rebuilt when Claude CLI updates
-# Using direct download for reliability
-RUN mkdir -p /home/node/.local/bin && \
-    wget -O /home/node/.local/bin/claude https://github.com/anthropics/claude-cli/releases/latest/download/claude-linux-x86_64 && \
-    chmod +x /home/node/.local/bin/claude
+# This layer is cached and only rebuilt when Dockerfile changes
+# Using official install script with timeout protection
+RUN wget -q -O /tmp/claude-install.sh https://claude.ai/install.sh && \
+    chmod +x /tmp/claude-install.sh && \
+    timeout 120 bash /tmp/claude-install.sh || exit 1 && \
+    rm -f /tmp/claude-install.sh
 
 # Copy application code AFTER CLI install (so code changes don't rebuild Claude CLI)
 COPY . .
