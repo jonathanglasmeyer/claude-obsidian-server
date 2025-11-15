@@ -45,6 +45,10 @@ const componentsFormatter = new ComponentsResponseFormatter();
 const errorHandler = new ErrorHandler();
 const threadNamer = new ThreadNamer();
 
+// Active streams tracking for /stop command
+// Maps thread ID to { stream, userId, startTime }
+const activeStreams = new Map();
+
 // HTTP Server for health checks and management endpoints
 const app = express();
 app.use(express.json());
@@ -92,6 +96,48 @@ client.on('messageCreate', async (message) => {
                         message.channel.parent?.id === process.env.DISCORD_INBOX_CHANNEL_ID;
 
   if (!isInboxChannel && !isInboxThread) return;
+
+  // Handle /stop command
+  if (message.content.trim() === '/stop') {
+    const threadId = message.channel.isThread() ? message.channel.id : null;
+
+    if (!threadId) {
+      await message.reply('❌ /stop kann nur in Threads verwendet werden');
+      return;
+    }
+
+    const activeStream = activeStreams.get(threadId);
+
+    if (!activeStream) {
+      await message.reply('❌ Keine aktive Claude-Anfrage in diesem Thread');
+      return;
+    }
+
+    // Verify user owns this stream
+    if (activeStream.userId !== message.author.id) {
+      await message.reply('❌ Du kannst nur deine eigenen Anfragen stoppen');
+      return;
+    }
+
+    try {
+      console.log(`🛑 User ${message.author.tag} stopping stream in thread ${threadId}`);
+
+      // Interrupt only the current stream (NOT the session!)
+      // This stops the current request but keeps conversation history intact
+      await activeStream.stream.interrupt();
+
+      // Remove from active streams
+      activeStreams.delete(threadId);
+
+      await message.reply('🛑 Claude-Anfrage gestoppt. Session bleibt erhalten.');
+
+    } catch (error) {
+      console.error('❌ Error stopping stream:', error);
+      await message.reply('❌ Fehler beim Stoppen der Anfrage');
+    }
+
+    return; // Don't process /stop as a regular message
+  }
 
   console.log(`📝 Processing message from ${message.author.tag}: ${message.content}`);
 
@@ -148,6 +194,15 @@ client.on('messageCreate', async (message) => {
     const claudeResult = await errorHandler.retryOperation(async () => {
       // Use session pool instead of direct query
       const stream = await sessionPool.processMessage(thread.id, conversationPrompt);
+
+      // Register stream for /stop command
+      activeStreams.set(thread.id, {
+        stream,
+        userId: message.author.id,
+        startTime: Date.now()
+      });
+
+      console.log(`📋 Registered active stream for thread ${thread.id}`);
 
       let fullResponse = '';
       let usage = null;
@@ -392,6 +447,12 @@ client.on('messageCreate', async (message) => {
 
         console.error('💥 Failed to send error to Discord - this is bad!');
       }
+    }
+  } finally {
+    // Always cleanup stream from active streams map
+    if (thread?.id && activeStreams.has(thread.id)) {
+      activeStreams.delete(thread.id);
+      console.log(`🧹 Cleaned up active stream for thread ${thread.id}`);
     }
   }
 });
