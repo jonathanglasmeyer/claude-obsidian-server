@@ -328,11 +328,12 @@ client.on('messageCreate', async (message) => {
     progressReporter.stop();
     tracer.endPhase();
 
-    // If stream was interrupted, don't send any response
+    // If stream was interrupted or response is empty, don't send
     // The /stop command already sent a reply
-    if (wasInterrupted) {
-      console.log('🛑 Stream interrupted, skipping response');
-      tracer.addMetadata('interrupted', true);
+    if (wasInterrupted || !fullResponse || fullResponse.trim() === '') {
+      console.log('🛑 Stream interrupted or empty response, skipping send');
+      tracer.addMetadata('interrupted', wasInterrupted);
+      tracer.addMetadata('emptyResponse', !fullResponse || fullResponse.trim() === '');
       return;
     }
 
