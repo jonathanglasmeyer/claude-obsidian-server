@@ -17,7 +17,10 @@ import {
   SeparatorSpacingSize,
   ButtonStyle,
   ButtonBuilder,
-  MessageFlags
+  MessageFlags,
+  SlashCommandBuilder,
+  REST,
+  Routes
 } from 'discord.js';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { RedisThreadManager } from './lib/RedisThreadManager.js';
@@ -49,6 +52,35 @@ const threadNamer = new ThreadNamer();
 // Maps thread ID to { stream, userId, startTime }
 const activeStreams = new Map();
 
+// Slash Commands Definition
+const commands = [
+  new SlashCommandBuilder()
+    .setName('stop')
+    .setDescription('Stoppt die laufende Claude-Anfrage in diesem Thread')
+    .toJSON()
+];
+
+// Register slash commands with Discord
+async function registerCommands() {
+  try {
+    console.log('🔄 Registering slash commands with Discord...');
+
+    const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_BOT_TOKEN);
+
+    // Get application ID from client after ready
+    const applicationId = client.application.id;
+
+    await rest.put(
+      Routes.applicationCommands(applicationId),
+      { body: commands }
+    );
+
+    console.log('✅ Slash commands registered successfully');
+  } catch (error) {
+    console.error('❌ Failed to register slash commands:', error);
+  }
+}
+
 // HTTP Server for health checks and management endpoints
 const app = express();
 app.use(express.json());
@@ -58,6 +90,9 @@ client.on('clientReady', async () => {
   console.log(`📥 Monitoring channel: ${process.env.DISCORD_INBOX_CHANNEL_ID}`);
 
   try {
+    // Register slash commands
+    await registerCommands();
+
     console.log('🔄 Initializing ThreadManager...');
 
     // Initialize thread manager with Discord client for archiving
@@ -96,48 +131,6 @@ client.on('messageCreate', async (message) => {
                         message.channel.parent?.id === process.env.DISCORD_INBOX_CHANNEL_ID;
 
   if (!isInboxChannel && !isInboxThread) return;
-
-  // Handle /stop command
-  if (message.content.trim() === '/stop') {
-    const threadId = message.channel.isThread() ? message.channel.id : null;
-
-    if (!threadId) {
-      await message.reply('❌ /stop kann nur in Threads verwendet werden');
-      return;
-    }
-
-    const activeStream = activeStreams.get(threadId);
-
-    if (!activeStream) {
-      await message.reply('❌ Keine aktive Claude-Anfrage in diesem Thread');
-      return;
-    }
-
-    // Verify user owns this stream
-    if (activeStream.userId !== message.author.id) {
-      await message.reply('❌ Du kannst nur deine eigenen Anfragen stoppen');
-      return;
-    }
-
-    try {
-      console.log(`🛑 User ${message.author.tag} stopping stream in thread ${threadId}`);
-
-      // Interrupt only the current stream (NOT the session!)
-      // This stops the current request but keeps conversation history intact
-      await activeStream.stream.interrupt();
-
-      // Remove from active streams
-      activeStreams.delete(threadId);
-
-      await message.reply('🛑 Claude-Anfrage gestoppt. Session bleibt erhalten.');
-
-    } catch (error) {
-      console.error('❌ Error stopping stream:', error);
-      await message.reply('❌ Fehler beim Stoppen der Anfrage');
-    }
-
-    return; // Don't process /stop as a regular message
-  }
 
   console.log(`📝 Processing message from ${message.author.tag}: ${message.content}`);
 
@@ -453,6 +446,64 @@ client.on('messageCreate', async (message) => {
     if (thread?.id && activeStreams.has(thread.id)) {
       activeStreams.delete(thread.id);
       console.log(`🧹 Cleaned up active stream for thread ${thread.id}`);
+    }
+  }
+});
+
+// Handle slash command interactions
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  if (interaction.commandName === 'stop') {
+    const threadId = interaction.channel?.isThread() ? interaction.channel.id : null;
+
+    if (!threadId) {
+      await interaction.reply({
+        content: '❌ /stop kann nur in Threads verwendet werden',
+        ephemeral: true
+      });
+      return;
+    }
+
+    const activeStream = activeStreams.get(threadId);
+
+    if (!activeStream) {
+      await interaction.reply({
+        content: '❌ Keine aktive Claude-Anfrage in diesem Thread',
+        ephemeral: true
+      });
+      return;
+    }
+
+    // Verify user owns this stream
+    if (activeStream.userId !== interaction.user.id) {
+      await interaction.reply({
+        content: '❌ Du kannst nur deine eigenen Anfragen stoppen',
+        ephemeral: true
+      });
+      return;
+    }
+
+    try {
+      console.log(`🛑 User ${interaction.user.tag} stopping stream in thread ${threadId} via slash command`);
+
+      // Interrupt only the current stream (NOT the session!)
+      await activeStream.stream.interrupt();
+
+      // Remove from active streams
+      activeStreams.delete(threadId);
+
+      await interaction.reply({
+        content: '🛑 Claude-Anfrage gestoppt. Session bleibt erhalten.',
+        ephemeral: false
+      });
+
+    } catch (error) {
+      console.error('❌ Error stopping stream:', error);
+      await interaction.reply({
+        content: '❌ Fehler beim Stoppen der Anfrage',
+        ephemeral: true
+      });
     }
   }
 });
