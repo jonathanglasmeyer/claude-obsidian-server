@@ -67,7 +67,7 @@ RUN wget -q -O /tmp/claude-install.sh https://claude.ai/install.sh && \
     rm -f /tmp/claude-install.sh
 
 # Install markitdown for PDF/document processing
-RUN /home/node/.local/bin/uv pip install --system markitdown
+RUN python3 -m pip install --user --break-system-packages markitdown
 
 # Copy application code AFTER CLI install (so code changes don't rebuild Claude CLI)
 COPY . .
@@ -75,7 +75,8 @@ COPY . .
 # Switch back to root to create symlinks, copy entrypoint, and fix PATH
 USER root
 RUN ln -sf /home/node/.local/bin/uv /usr/local/bin/uv && \
-    ln -sf /home/node/.local/bin/claude /usr/local/bin/claude
+    ln -sf /home/node/.local/bin/claude /usr/local/bin/claude && \
+    ln -sf /home/node/.local/bin/markitdown /usr/local/bin/markitdown
 
 # Copy and set up entrypoint script
 COPY entrypoint.sh /entrypoint.sh
