@@ -1,4 +1,5 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
+import { createMessageIterable } from './MessageBuilder.js';
 
 class ClaudeSessionPool {
   constructor(redisClient) {
@@ -17,6 +18,12 @@ class ClaudeSessionPool {
 
   async getOrCreateSession(threadId, initialPrompt = null) {
     try {
+      // Normalize prompt - support both string and structured format
+      const isStructured = typeof initialPrompt === 'object' && initialPrompt?.hasImages !== undefined;
+      const textPrompt = isStructured ? initialPrompt.text : initialPrompt;
+      const hasImages = isStructured && initialPrompt.hasImages;
+      const content = isStructured ? initialPrompt.content : null;
+
       // Check memory cache first - if found, use it exclusively
       if (this.sessionCache.has(threadId)) {
         const metadata = this.sessionMetadata.get(threadId);
@@ -40,8 +47,13 @@ class ClaudeSessionPool {
         console.log(`🔄 Resuming session ${persistedSessionId} for thread ${threadId}`);
 
         try {
+          // Use AsyncIterable for messages with images
+          const promptValue = hasImages
+            ? createMessageIterable(content, persistedSessionId)
+            : (textPrompt || "Continue our conversation");
+
           const session = query({
-            prompt: initialPrompt || "Continue our conversation",
+            prompt: promptValue,
             options: {
               resume: persistedSessionId,
               cwd: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault',
@@ -75,8 +87,13 @@ class ClaudeSessionPool {
       // Create new session
       console.log(`🆕 Creating new Claude session for thread ${threadId}`);
 
+      // Use AsyncIterable for messages with images
+      const promptValue = hasImages
+        ? createMessageIterable(content, '')
+        : (textPrompt || "Start new Discord conversation");
+
       const session = query({
-        prompt: initialPrompt || "Start new Discord conversation",
+        prompt: promptValue,
         options: {
           cwd: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault',
           maxTurns: 100,
@@ -111,8 +128,24 @@ class ClaudeSessionPool {
     }
   }
 
+  /**
+   * Process a message with optional image support
+   * @param {string} threadId - Discord thread ID
+   * @param {string|Object} prompt - Either a string or structured prompt from buildStructuredPrompt
+   * @returns {Query} Claude session stream
+   */
   async processMessage(threadId, prompt) {
     try {
+      // Normalize prompt - support both string and structured format
+      const isStructured = typeof prompt === 'object' && prompt.hasImages !== undefined;
+      const textPrompt = isStructured ? prompt.text : prompt;
+      const hasImages = isStructured && prompt.hasImages;
+      const content = isStructured ? prompt.content : null;
+
+      if (hasImages) {
+        console.log(`🖼️  Processing message with ${prompt.images.length} image(s)`);
+      }
+
       // Check if this is a cached session (existing conversation)
       if (this.sessionCache.has(threadId)) {
         console.log(`🔄 Continuing existing session for thread ${threadId}`);
@@ -127,8 +160,14 @@ class ClaudeSessionPool {
 
         // Resume specific session by ID with detailed logging
         console.log(`🔄 Resuming session ${metadata.sessionId} for thread ${threadId}`);
+
+        // Use AsyncIterable for messages with images
+        const promptValue = hasImages
+          ? createMessageIterable(content, metadata.sessionId)
+          : textPrompt;
+
         const continueSession = query({
-          prompt: prompt,
+          prompt: promptValue,
           options: {
             resume: metadata.sessionId,
             cwd: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault',

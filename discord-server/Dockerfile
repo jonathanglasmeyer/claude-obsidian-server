@@ -37,6 +37,9 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     wget \
+    ocrmypdf \
+    tesseract-ocr \
+    tesseract-ocr-deu \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -62,6 +65,9 @@ RUN wget -q -O /tmp/claude-install.sh https://claude.ai/install.sh && \
     chmod +x /tmp/claude-install.sh && \
     timeout 120 bash /tmp/claude-install.sh || exit 1 && \
     rm -f /tmp/claude-install.sh
+
+# Install markitdown for PDF/document processing
+RUN /home/node/.local/bin/uv pip install --system markitdown
 
 # Copy application code AFTER CLI install (so code changes don't rebuild Claude CLI)
 COPY . .

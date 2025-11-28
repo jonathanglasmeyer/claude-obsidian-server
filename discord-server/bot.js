@@ -1,5 +1,12 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Load .env.local first (dev), fallback to .env (production)
+dotenv.config({ path: join(__dirname, '.env.local') });
+dotenv.config(); // Fallback for vars not in .env.local
 
 import express from 'express';
 
@@ -31,6 +38,7 @@ import { ProgressReporter } from './lib/ProgressReporter.js';
 import ThreadNamer from './lib/ThreadNamer.js';
 import { PerformanceTracer } from './lib/PerformanceTracer.js';
 import ClaudeSessionPool from './lib/ClaudeSessionPool.js';
+import { buildStructuredPrompt } from './lib/MessageBuilder.js';
 
 const client = new Client({
   intents: [
@@ -132,7 +140,16 @@ client.on('messageCreate', async (message) => {
 
   if (!isInboxChannel && !isInboxThread) return;
 
+  // Build structured prompt with text, images, and documents
+  const structuredPrompt = await buildStructuredPrompt(message);
+
   console.log(`📝 Processing message from ${message.author.tag}: ${message.content}`);
+  if (structuredPrompt.hasImages) {
+    console.log(`🖼️  Found ${structuredPrompt.images.length} image(s): ${structuredPrompt.images.map(i => i.name).join(', ')}`);
+  }
+  if (structuredPrompt.hasDocuments) {
+    console.log(`📄 Found ${structuredPrompt.documents.length} document(s): ${structuredPrompt.documents.map(d => d.name).join(', ')}`);
+  }
 
   // Initialize performance tracing
   const tracer = new PerformanceTracer();
@@ -168,25 +185,33 @@ client.on('messageCreate', async (message) => {
     await progressReporter.start();
     tracer.endPhase();
 
-    // Build conversation context
+    // Build conversation context - use structured prompt for images and documents
     // Skip conversation context building - sessions handle context
-    const conversationPrompt = message.content;
     tracer.endPhase({
-      promptLength: conversationPrompt.length,
-      promptPreview: conversationPrompt.slice(0, 100) + '...'
+      promptLength: structuredPrompt.text.length,
+      promptPreview: structuredPrompt.text.slice(0, 100) + '...',
+      hasImages: structuredPrompt.hasImages,
+      imageCount: structuredPrompt.images.length,
+      hasDocuments: structuredPrompt.hasDocuments,
+      documentCount: structuredPrompt.documents.length
     });
 
     // Process with Claude Code SDK with retry logic
     console.log('🤖 Calling Claude with conversation context...');
 
     tracer.startPhase('claude_sdk_call', {
-      promptLength: conversationPrompt.length,
+      promptLength: structuredPrompt.text.length,
+      hasImages: structuredPrompt.hasImages,
+      imageCount: structuredPrompt.images.length,
+      hasDocuments: structuredPrompt.hasDocuments,
+      documentCount: structuredPrompt.documents.length,
       vaultPath: process.env.OBSIDIAN_VAULT_PATH || '/srv/claude-jobs/obsidian-vault'
     });
 
     const claudeResult = await errorHandler.retryOperation(async () => {
       // Use session pool instead of direct query
-      const stream = await sessionPool.processMessage(thread.id, conversationPrompt);
+      // Pass structured prompt for image support
+      const stream = await sessionPool.processMessage(thread.id, structuredPrompt);
 
       // Register stream for /stop command
       activeStreams.set(thread.id, {
